@@ -68,6 +68,11 @@
       if (!ms) return '–';
       var s = (Date.now() - ms) / 1000;
       if (s < 60) return 'agora';
+      // long spans read like people say them: "há 4 meses", "há 2 anos"
+      var days = s / 86400;
+      if (days >= 365) { var y = Math.floor(days / 365); return 'há ' + y + (y === 1 ? ' ano' : ' anos'); }
+      if (days >= 30) { var mo = Math.floor(days / 30); return 'há ' + mo + (mo === 1 ? ' mês' : ' meses'); }
+      if (days >= 2) return 'há ' + Math.floor(days) + ' dias';
       return 'há ' + fmt.dur(s);
     },
     until: function (ms) { return ms ? 'em ' + fmt.dur((ms - Date.now()) / 1000) : '–'; },
@@ -147,6 +152,18 @@
 
   var feedCache = {};
   /** Public data feeds through the agent's proxy, shared and cached per URL. */
+  /** Runs an action on the PC and reports the result in the island. */
+  KB.act = function (path, body, method) {
+    KB.haptic();
+    return KB.api(path, { method: method || 'POST', body: body || {} }).then(function (r) {
+      var msg = r.data && (r.data.msg || r.data.error);
+      KB.toast({ title: r.ok ? (msg || 'Feito') : 'Não deu certo', text: r.ok ? '' : (msg || 'O agente não respondeu.'), level: r.ok ? 'ok' : 'error', seconds: r.ok ? 2.5 : 5 });
+      return r;
+    });
+  };
+  /** Opens an https page in the PC's browser. */
+  KB.openOnPc = function (url) { return KB.act('/api/open', { url: url }); };
+
   KB.feed = function (url, ttl) {
     var c = feedCache[url];
     if (c && Date.now() - c.at < (ttl || 300000)) return c.p;
@@ -195,7 +212,8 @@
     if (!t) { islandBusy = false; return; }
     islandBusy = true;
     island.style.setProperty('--c', levelColors[t.level] || levelColors.info);
-    island.innerHTML = '<div class="ic">' + KB.esc(t.icon || (t.level === 'error' ? '!' : t.level === 'warn' ? '!' : t.level === 'ok' ? '✓' : '›')) + '</div>' +
+    var icon = t.icon || (t.level === 'error' || t.level === 'warn' ? 'alert' : t.level === 'ok' ? 'check' : 'bell');
+    island.innerHTML = '<div class="ico">' + KBIcons.html(icon) + '</div>' +
       '<div class="tx"><b>' + KB.esc(t.title || '') + '</b>' + (t.text ? '<span>' + KB.esc(t.text) + '</span>' : '') + '</div>' +
       (t.actions ? '<div class="acts"></div>' : '');
     if (t.actions) {
@@ -235,6 +253,46 @@
   };
   KB.sheetOpen = function () { return sheet.classList.contains('show'); };
   scrim.addEventListener('click', KB.closeSheet);
+  (function () {
+    var sd = null;
+    sheet.addEventListener('pointerdown', function (e) {
+      var r = sheet.getBoundingClientRect();
+      if (!e.target.classList.contains('grab') && e.clientY - r.top > 56) return;
+      sd = { y: e.clientY, t: Date.now(), dy: 0 };
+      sheet.classList.add('dragging');
+    });
+    document.addEventListener('pointermove', function (e) {
+      if (!sd) return;
+      sd.dy = Math.max(0, e.clientY - sd.y);
+      sheet.style.transform = getComputedStyle(sheet).bottom === '0px'
+        ? 'translate(-50%,' + sd.dy + 'px)' : 'translate(-50%, calc(50% + ' + sd.dy + 'px))';
+    });
+    function end() {
+      if (!sd) return;
+      var d = sd; sd = null;
+      sheet.classList.remove('dragging');
+      sheet.style.transform = '';
+      if (d.dy > 110 || d.dy / Math.max(1, Date.now() - d.t) > .6) KB.closeSheet();
+    }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+  })();
+
+  /** Animates a number in place (ease-out, ~0.6 s). render(v) returns the HTML for a value. */
+  KB.tween = function (el, to, render) {
+    if (to == null || isNaN(to)) { el._tv = null; el.innerHTML = render(null); return; }
+    var from = el._tv;
+    el._tv = to;
+    if (from == null || Math.abs(to - from) < 1e-9) { el.innerHTML = render(to); return; }
+    var t0 = performance.now(), dur = 600, id = (el._tid || 0) + 1;
+    el._tid = id;
+    (function frame(t) {
+      if (el._tid !== id) return;
+      var k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.innerHTML = render(from + (to - from) * e);
+      if (k < 1) requestAnimationFrame(frame);
+    })(t0);
+  };
 
   // ---------- widget registry ----------
   /** KB.def('clock', { mount: function (el, w, ctx) { return { update: fn(state, full), destroy: fn } } }) */
@@ -249,6 +307,8 @@
     try { inst = def.mount(host, w, ctx || {}) || {}; }
     catch (e) { host.innerHTML = '<div class="empty">erro em ' + KB.esc(w.type) + '</div>'; return null; }
     sizeObserver(host);
+    var head = host.querySelector(':scope > .w-h');
+    if (head && !head.classList.contains('ch-h') && !head.querySelector('.ic')) head.insertAdjacentHTML('afterbegin', KBIcons.html(TYPE_ICON[w.type] || 'grid'));
     var safe = {
       update: function (s, full) { if (inst.update) { try { inst.update(s, full); } catch (e) { /* one widget never breaks the page */ } } },
       destroy: function () { if (ro) ro.unobserve(host); if (inst.destroy) { try { inst.destroy(); } catch (e) { } } },
@@ -257,6 +317,14 @@
     };
     return safe;
   };
+
+  var TYPE_ICON = { clock: 'clock', analog: 'compass', worldclock: 'world', wordclock: 'letters', calendar: 'calendar', progress: 'hourglass',
+    countdown: 'target', pomodoro: 'flame', timer: 'timer', stopwatch: 'stopwatch', weather: 'cloud', forecast: 'rain', sun: 'sunrise', moon: 'moon',
+    air: 'leaf', stat: 'activity', gauge: 'gauge', chart: 'chart', meters: 'memory', gpu: 'gpu', topprocs: 'layers', processes: 'layers', media: 'music',
+    volume: 'volume', shortcuts: 'grid', button: 'target', rules: 'bolt', quotas: 'sparkle', quotaring: 'ring', sessions: 'robot', github: 'branch',
+    note: 'note', checklist: 'checklist', counter: 'counter', breathe: 'breathe', quote: 'quote', label: 'tag', battery: 'battery', push: 'webhook',
+    inbox: 'inbox', hackernews: 'news', exchange: 'exchange', crypto: 'coin', html: 'braces', image: 'image', stack: 'stack' };
+  KB.typeIcon = function (t) { return TYPE_ICON[t] || 'grid'; };
 
   // Display widgets (clock, gauges) scale freely with their slot; list widgets stop growing at 1/24 of the screen's
   // short side so a full-page list stays a list instead of becoming a poster.
@@ -283,7 +351,7 @@
   };
 
   // ---------- pages ----------
-  var track = KB.$('#track'), dots = KB.$('#dots');
+  var track = KB.$('#track'), dock = KB.$('#dock');
   var instances = [];
 
   function place(el, w) {
@@ -300,7 +368,6 @@
     instances.forEach(function (list) { list.forEach(function (i) { if (i) i.destroy(); }); });
     instances = [];
     track.innerHTML = '';
-    dots.innerHTML = '';
     KB.pages = (KB.cfg.pages || []).filter(function (p) { return p.enabled !== false; });
     if (!KB.pages.length) KB.pages = [{ id: 'empty', title: 'Vazio', widgets: [] }];
     KB.pages.forEach(function (p, pi) {
@@ -317,29 +384,79 @@
       if (!(p.widgets || []).length) page.innerHTML = '<div class="w" style="grid-column:1/-1;grid-row:1/-1"><div class="empty">página vazia — adicione widgets no editor</div></div>';
       track.appendChild(page);
       instances.push(list);
-      dots.appendChild(KB.h('i'));
     });
-    dots.style.display = KB.pages.length > 1 ? '' : 'none';
+    renderDock();
     KB.index = KB.clamp(KB.index, 0, KB.pages.length - 1);
     go(KB.index, false);
+    var first = track.children[KB.index];
+    if (first) first.classList.add('enter');
     tick(true);
   }
   KB.render = render;
+
+  // Spring-driven position in page units: a fast flick carries further, a slow drag settles gently.
+  var pos = 0, vel = 0, target = 0, raf = 0, lastT = 0;
+  function applyPos() {
+    track.style.transform = 'translate3d(' + (-pos * innerWidth).toFixed(2) + 'px,0,0)';
+    var pages = track.children;
+    for (var i = 0; i < pages.length; i++) {
+      var d = Math.abs(i - pos), pg = pages[i];
+      if (d >= 1.05) { if (pg._near) { pg.style.transform = ''; pg.style.opacity = ''; pg._near = false; } continue; }
+      // neighbours recede a little, like iPad home-screen pages
+      var k = Math.min(1, d);
+      pg.style.transform = k < .001 ? '' : 'scale(' + (1 - k * .05).toFixed(4) + ')';
+      pg.style.opacity = k < .001 ? '' : (1 - k * .3).toFixed(3);
+      pg._near = true;
+    }
+  }
+  function spring(t) {
+    var dt = Math.min(.034, ((t - lastT) / 1000) || .016);
+    lastT = t;
+    var stiff = 230, damp = 2 * Math.sqrt(stiff) * .9; // slightly under-damped: a hint of settle, never a wobble
+    vel += (-stiff * (pos - target) - damp * vel) * dt;
+    pos += vel * dt;
+    if (Math.abs(pos - target) < .0004 && Math.abs(vel) < .003) { pos = target; vel = 0; applyPos(); raf = 0; settle(); return; }
+    applyPos();
+    raf = requestAnimationFrame(spring);
+  }
+  function animateTo(i, v) {
+    target = i;
+    if (v != null) vel = v;
+    wake();
+    if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(spring); }
+  }
+  // At rest only the current page paints; neighbours come back (and get their own layer) while swiping.
+  function wake() {
+    document.body.classList.add('swiping');
+    Array.prototype.forEach.call(track.children, function (pg, i) {
+      var d = Math.abs(i - KB.index);
+      pg.classList.toggle('off', d > 1);
+      pg.classList.toggle('near', d <= 1);
+    });
+  }
+  function settle() {
+    document.body.classList.remove('swiping');
+    Array.prototype.forEach.call(track.children, function (pg, i) { pg.classList.toggle('off', i !== KB.index); pg.classList.remove('near'); });
+    refreshCurrent();
+  }
+  var pendingRefresh = false;
+  function refreshCurrent() {
+    if (!pendingRefresh) return;
+    pendingRefresh = false;
+    var merged = mergeFull(KB.state);
+    (instances[KB.index] || []).forEach(function (w) { if (w) w.update(merged, true); });
+  }
 
   function go(i, animate) {
     i = KB.clamp(i, 0, KB.pages.length - 1);
     var changed = i !== KB.index;
     KB.index = i;
-    track.classList.toggle('dragging', animate === false);
-    track.style.transform = 'translate3d(' + (-i * 100) + '%,0,0)';
-    Array.prototype.forEach.call(dots.children, function (d, k) { d.classList.toggle('on', k === i); });
-    var page = track.children[i];
-    if (page && (changed || animate === false)) {
-      page.classList.remove('enter');
-      void page.offsetWidth;
-      page.classList.add('enter');
-    }
-    if (animate === false) requestAnimationFrame(function () { track.classList.remove('dragging'); });
+    if (animate === false) { if (raf) { cancelAnimationFrame(raf); raf = 0; } pos = target = i; vel = 0; applyPos(); settle(); }
+    else animateTo(i);
+    markDock();
+    // the new page's widgets refresh once the spring has settled, never mid-animation
+    if (changed || animate === false) pendingRefresh = true;
+    if (animate === false) refreshCurrent();
     KB.store.set('page', KB.pages[i] ? KB.pages[i].id : '');
   }
   KB.go = go;
@@ -348,34 +465,72 @@
     for (var i = 0; i < KB.pages.length; i++) if (KB.pages[i].id === id || String(i + 1) === String(id)) { go(i); return true; }
     return false;
   };
+  window.addEventListener('resize', function () { applyPos(); });
+
+  // ---------- dock ----------
+  var dockTimer = 0;
+  function dockMode() { return (KB.cfg && KB.cfg.display && KB.cfg.display.dock) || 'auto'; }
+  function renderDock() {
+    dock.innerHTML = '';
+    if (KB.pages.length < 2 || dockMode() === 'off') { dock.style.display = 'none'; return; }
+    dock.style.display = '';
+    KB.pages.forEach(function (p, i) {
+      var b = KB.h('button', '', KBIcons.html(p.icon || 'grid'));
+      b.setAttribute('aria-label', p.title || p.id);
+      b.addEventListener('click', function (e) { e.stopPropagation(); KB.haptic(); go(i); showDock(); });
+      dock.appendChild(b);
+    });
+    markDock();
+    showDock();
+  }
+  function markDock() { Array.prototype.forEach.call(dock.children, function (b, k) { b.classList.toggle('on', k === KB.index); }); }
+  function showDock() {
+    dock.classList.remove('hide');
+    clearTimeout(dockTimer);
+    if (dockMode() === 'auto') dockTimer = setTimeout(function () { dock.classList.add('hide'); }, 3500);
+  }
+  var dlp = 0;
+  dock.addEventListener('pointerdown', function () { dlp = setTimeout(showOverview, 600); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { dock.addEventListener(n, function () { clearTimeout(dlp); }); });
 
   // ---------- swipe ----------
   var drag = null;
   document.addEventListener('pointerdown', function (e) {
     userActive();
-    if (KB.sheetOpen() || e.target.closest('[data-noswipe]')) return;
-    drag = { x: e.clientX, y: e.clientY, t: Date.now(), dx: 0, axis: null, id: e.pointerId, target: e.target };
+    showDock();
+    if (!e.target || !e.target.closest) return;
+    if (KB.sheetOpen() || e.target.closest('[data-noswipe]') || e.target.closest('#dock') || e.target.closest('.sheet')) return;
+    drag = { x: e.clientX, y: e.clientY, t: Date.now(), dx: 0, axis: null, id: e.pointerId, start: pos, samples: [[e.clientX, performance.now()]] };
+    if (raf) { cancelAnimationFrame(raf); raf = 0; vel = 0; drag.start = pos; }
   });
   document.addEventListener('pointermove', function (e) {
     if (!drag || e.pointerId !== drag.id) return;
     var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.axis && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (!drag.axis && (Math.abs(dx) > 9 || Math.abs(dy) > 9)) drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
     if (drag.axis !== 'x') return;
+    if (!drag.woke) { drag.woke = true; wake(); }
     drag.dx = dx;
-    var edge = (KB.index === 0 && dx > 0) || (KB.index === KB.pages.length - 1 && dx < 0);
-    var eff = edge ? dx * .3 : dx; // rubber band at the ends
-    track.classList.add('dragging');
-    track.style.transform = 'translate3d(calc(' + (-KB.index * 100) + '% + ' + eff + 'px),0,0)';
+    drag.samples.push([e.clientX, performance.now()]);
+    if (drag.samples.length > 6) drag.samples.shift();
+    var p = drag.start - dx / innerWidth, max = KB.pages.length - 1;
+    if (p < 0) p = p * .28; else if (p > max) p = max + (p - max) * .28; // rubber band at the ends
+    pos = p;
+    applyPos();
   });
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== drag.id)) return;
     var d = drag; drag = null;
-    track.classList.remove('dragging');
-    if (d.axis !== 'x') { go(KB.index); return; }
-    var v = d.dx / Math.max(1, Date.now() - d.t);
-    var dir = (d.dx < -innerWidth * .18 || v < -.45) ? 1 : (d.dx > innerWidth * .18 || v > .45) ? -1 : 0;
-    go(KB.index + dir);
-    if (dir) KB.haptic();
+    if (d.axis !== 'x') { if (pos !== target) animateTo(target); return; }
+    // release velocity from the last ~80 ms of movement, in pages per second
+    var a = d.samples[0], b = d.samples[d.samples.length - 1], v = 0;
+    if (b[1] - a[1] > 0) v = -((b[0] - a[0]) / (b[1] - a[1]) * 1000) / innerWidth;
+    var projected = pos + v * .22;
+    var next = KB.clamp(Math.round(projected), KB.index - 1, KB.index + 1);
+    next = KB.clamp(next, 0, KB.pages.length - 1);
+    var changed = next !== KB.index;
+    vel = KB.clamp(v, -8, 8);
+    go(next);
+    if (changed) KB.haptic();
     KB.swallowClick = true;
     setTimeout(function () { KB.swallowClick = false; }, 60);
   }
@@ -383,14 +538,35 @@
   document.addEventListener('pointercancel', endDrag);
   document.addEventListener('click', function (e) { if (KB.swallowClick) { e.stopPropagation(); e.preventDefault(); } }, true);
 
-  // long-press on empty space or tap on dots → overview
+  // long-press on empty space → overview
   var lp = 0;
   document.addEventListener('pointerdown', function (e) {
-    if (!e.target.classList.contains('page')) return;
+    if (!e.target || !e.target.classList || !e.target.classList.contains('page')) return;
     lp = setTimeout(showOverview, 550);
   });
   ['pointerup', 'pointermove', 'pointercancel'].forEach(function (n) { document.addEventListener(n, function () { clearTimeout(lp); }); });
-  dots.addEventListener('click', showOverview);
+
+  // ---------- status bar (iPad) ----------
+  var sb = KB.$('#statusbar'), sbBattery = null, sbBatteryAt = 0;
+  function transport() {
+    if (location.protocol === 'https:') return 'wifi';
+    if (KB.android) return 'usb';
+    return 'monitor';
+  }
+  function statusBar() {
+    if (!sb || document.body.classList.contains('no-bar')) return;
+    var d = new Date();
+    if (KB.android && KB.android.battery && Date.now() - sbBatteryAt > 30000) {
+      sbBatteryAt = Date.now();
+      try { sbBattery = JSON.parse(KB.android.battery(KB.key)); } catch (e) { sbBattery = null; }
+    }
+    var host = (KB.state.sys && KB.state.sys.host) ? KB.state.sys.host.toLowerCase() : '';
+    var bat = sbBattery && sbBattery.level != null
+      ? '<span class="sb-bat num">' + sbBattery.level + '%' + KBIcons.html(sbBattery.charging ? 'bolt' : 'battery') + '</span>' : '';
+    sb.innerHTML = '<span class="num">' + fmt.time(d, false) + '</span><span class="sb-d">' +
+      KB.esc(d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '')) + '</span>' +
+      '<span class="sb-r">' + KBIcons.html(transport()) + '<span class="mono">' + KB.esc(host) + '</span>' + bat + '</span>';
+  }
 
   var overview = KB.$('#overview');
   function showOverview() {
@@ -398,7 +574,7 @@
     g.innerHTML = '';
     KB.pages.forEach(function (p, i) {
       var t = KB.h('button', 'tile press' + (i === KB.index ? ' on' : ''),
-        '<span>' + String(i + 1).padStart(2, '0') + '</span><div class="e">' + KB.esc(p.icon || '▢') + '</div><b>' + KB.esc(p.title || p.id) + '</b>');
+        '<span>' + String(i + 1).padStart(2, '0') + '</span>' + KBIcons.html(p.icon || 'grid') + '<b>' + KB.esc(p.title || p.id) + '</b>');
       t.addEventListener('click', function (e) { e.stopPropagation(); overview.classList.remove('show'); go(i); });
       g.appendChild(t);
     });
@@ -494,12 +670,18 @@
     reloadSeq = s.reload;
     // notifications since the last poll
     if (lastNotice < 0) lastNotice = s.lastNotice || 0;
+    if ((s.lastNotice || 0) < lastNotice) lastNotice = 0; // the agent's counter went back (old data): resync
     (s.notices || []).forEach(function (n) {
       if (n.id <= lastNotice) return;
       lastNotice = n.id;
       if (n.wake) { nightWokeUntil = Date.now() + 30000; applyNight(); }
       if (n.vibrate !== false) KB.buzz();
-      KB.toast({ title: n.title, text: n.text, level: n.level, seconds: n.seconds });
+      var fromWindows = n.source === 'windows';
+      KB.toast({
+        title: fromWindows ? (n.app + ' · ' + n.title) : n.title, text: n.text, level: n.level, seconds: n.seconds || (fromWindows ? 7 : 5),
+        icon: fromWindows ? 'bell' : null,
+        actions: fromWindows && n.aumid ? [{ label: 'Abrir', primary: true, run: function () { KB.act('/api/notify/' + n.id + '/open'); } }] : null,
+      });
     });
     // page requests from webhooks and rules, with a countdown
     var g = s['goto'];
@@ -529,7 +711,7 @@
     if (!n) { go(target); return; }
     var name = KB.pages[target].title || KB.pages[target].id, cancelled = false;
     KB.toast({
-      title: 'Indo para ' + name, text: 'em ' + n + '…', seconds: n + .4, icon: '→',
+      title: 'Indo para ' + name, text: 'em ' + n + '…', seconds: n + .4, icon: 'arrow',
       actions: [{ label: 'Ficar', run: function () { cancelled = true; } }, { label: 'Ir', primary: true, run: function () { cancelled = true; go(target); } }],
       onShow: function (el) {
         var left = n, span = el.querySelector('.tx span');
@@ -548,7 +730,13 @@
     var full = forceFull || Date.now() - lastFull > 4500;
     if (full) lastFull = Date.now();
     KB.api('/api/state?since=' + Math.max(0, lastNotice) + (full ? '&full=1' : '')).then(function (r) {
-      if (!r.ok || !r.data) { failures++; if (failures > 2) KB.$('#conn').classList.add('show'); return; }
+      if (!r.ok || !r.data) {
+        failures++;
+        if (failures > 2) KB.$('#conn').classList.add('show');
+        // cable pulled or PC moved: after ~3 s let the app try the other route (USB ↔ Wi-Fi), again every ~2 min
+        if ((failures === 3 || failures % 30 === 0) && KB.android && KB.android.reconnect && KB.key) { try { KB.android.reconnect(KB.key); } catch (e) { } }
+        return;
+      }
       failures = 0;
       KB.$('#conn').classList.remove('show');
       if (!booted) { booted = true; KB.$('#boot').classList.add('hide'); }
@@ -571,7 +759,17 @@
     if (a.radius != null) root.setProperty('--r', a.radius + 'px');
     if (a.gap != null) { root.setProperty('--gap', a.gap + 'px'); root.setProperty('--pad', a.gap + 'px'); }
     document.body.classList.toggle('flat', a.preset === 'flat');
+    document.body.classList.toggle('translucent', a.preset === 'translucent' || !!a.blur);
     document.body.classList.toggle('seamless', a.preset === 'seamless');
+    var wall = a.wallpaper || 'aurora';
+    document.body.classList.toggle('wall-motion', a.motion === 'live');
+    ['aurora', 'sunset', 'graphite', 'oled', 'custom'].forEach(function (n) { document.body.classList.toggle('wall-' + n, n === wall); });
+    if (wall === 'custom') root.setProperty('--wall-img', 'url("/api/wallpaper?v=' + encodeURIComponent(a.wallpaperV || 0) + '")');
+    root.setProperty('--wall-dim', a.wallDim != null ? KB.clamp(+a.wallDim, 0, 90) / 100 : .3);
+    // real backdrop blur costs a re-blur every frame, so the wallpaper holds still while it is on
+    document.body.classList.toggle('blur', !!a.blur);
+    document.body.classList.toggle('still', !!a.blur);
+    document.body.classList.toggle('no-bar', (cfg.display || {}).statusBar === false);
     KB.onKey();
     var saved = KB.store.get('page', '');
     if (cfgVersion >= 0 && !KB.pages.length && saved) {
@@ -621,6 +819,7 @@
     setInterval(housekeeping, 5000);
     // the clock widgets tick by themselves every second
     setInterval(function () {
+      statusBar();
       var list = instances[KB.index] || [];
       list.forEach(function (i) { if (i && i.secondly) { try { i.secondly(); } catch (e) { } } });
     }, 1000);

@@ -2,25 +2,116 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <title>KONGBOX</title>
 <style>
-html, body { margin: 0; height: 100%; background: #000; color: #f5f5f7; font: 15px/1.4 -apple-system, Roboto, system-ui, sans-serif; overflow: hidden; }
-body { display: grid; place-items: center; text-align: center; }
-.logo { font: 800 44px/1 -apple-system, Roboto, sans-serif; letter-spacing: -.04em; }
-.logo i { font-style: normal; color: #30d158; animation: b 1.1s steps(1) infinite; }
+:root { --accent: #0a84ff; --green: #30d158; --amber: #ff9f0a; --red: #ff453a; --text: #f5f5f7; --text-2: rgba(235,235,245,.62); --text-3: rgba(235,235,245,.34);
+  --sans: -apple-system, "SF Pro Display", Roboto, system-ui, sans-serif; --mono: "SF Mono", ui-monospace, "Roboto Mono", "Droid Sans Mono", monospace; --ease: cubic-bezier(.32,.72,0,1); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; color: var(--text); font: 15px/1.4 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+body { background: #05060a; display: grid; place-items: center; padding: 20px; }
+.bg { position: fixed; inset: -20%; z-index: -1; background:
+  radial-gradient(40% 40% at 25% 30%, rgba(10,132,255,.35), transparent 70%),
+  radial-gradient(35% 35% at 75% 70%, rgba(191,90,242,.28), transparent 70%),
+  radial-gradient(30% 30% at 70% 20%, rgba(48,209,88,.16), transparent 70%); filter: blur(30px); animation: drift 30s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translate3d(4%, -3%, 0) rotate(8deg); } }
+.card { width: min(440px, 100%); padding: 28px 26px; border-radius: 30px; background: rgba(28,28,30,.62); border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  animation: in .7s var(--ease) both; text-align: center; }
+@keyframes in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+.logo { font: 800 34px/1 var(--sans); letter-spacing: -.04em; }
+.logo i { font-style: normal; color: var(--green); animation: b 1.1s steps(1) infinite; }
 @keyframes b { 50% { opacity: 0; } }
-p { color: rgba(235,235,245,.6); max-width: 440px; margin: 18px auto 0; padding: 0 20px; }
-code { font: 13px "Droid Sans Mono", monospace; color: #64d2ff; }
-.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff9f0a; margin-right: 6px; animation: p 1.6s ease-in-out infinite; }
+.st { margin: 14px 0 4px; color: var(--text-2); display: flex; align-items: center; justify-content: center; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); animation: p 1.6s ease-in-out infinite; }
 @keyframes p { 50% { opacity: .25; } }
+.hint { color: var(--text-3); font-size: 13px; margin: 0 0 18px; }
+.sep { height: 1px; background: rgba(255,255,255,.08); margin: 18px 0; }
+h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+input { width: 100%; padding: 13px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.35); color: var(--text); font: 17px var(--mono); text-align: center; outline: none; margin-bottom: 10px; transition: border-color .2s; }
+input:focus { border-color: var(--accent); }
+button { width: 100%; padding: 14px; border-radius: 14px; border: 0; background: var(--accent); color: #fff; font: 600 16px var(--sans); transition: transform .3s cubic-bezier(.34,1.36,.64,1), opacity .2s; }
+button:active { transform: scale(.96); }
+button.ghost { background: rgba(255,255,255,.08); color: var(--text); margin-top: 8px; }
+button[disabled] { opacity: .5; }
+.check { font: 700 30px var(--mono); letter-spacing: .08em; margin: 6px 0 4px; color: var(--green); }
+.err { color: var(--red); font-size: 13px; min-height: 18px; margin-top: 8px; }
+.step { display: none; }
+.step.on { display: block; animation: in .45s var(--ease) both; }
+.mono { font-family: var(--mono); }
 </style>
 </head>
 <body>
-<div>
+<div class="bg"></div>
+<div class="card">
   <div class="logo">KONGBOX<i>_</i></div>
-  <p><span class="dot"></span>procurando o agente no PC…</p>
-  <p>Ligue o cabo USB com a depuração USB ativa e deixe o <code>KongBoxAgent</code> aberto. O painel volta sozinho.</p>
+  <div class="st"><span class="dot"></span><span id="status">procurando o PC…</span></div>
+  <p class="hint" id="hint">Pelo cabo USB (com depuração USB) ou pelo Wi-Fi, se este celular já foi pareado.</p>
+
+  <div class="sep"></div>
+
+  <div class="step on" id="s1">
+    <h2>Parear pelo Wi-Fi</h2>
+    <p class="hint">No PC, abra Configurações › Celular › Parear pelo Wi-Fi. Escaneie o QR com a câmera, ou digite o endereço abaixo.</p>
+    <input id="host" inputmode="decimal" placeholder="192.168.0.10" autocomplete="off">
+    <button id="go">Conectar</button>
+    <div class="err" id="e1"></div>
+  </div>
+
+  <div class="step" id="s2">
+    <h2>Confira o código no PC</h2>
+    <p class="hint">Ele precisa ser igual ao que aparece na tela de pareamento do <b id="pcname"></b>.</p>
+    <div class="check" id="check"></div>
+    <input id="code" inputmode="numeric" maxlength="6" placeholder="código de 6 dígitos" autocomplete="off">
+    <button id="pair">É igual, parear</button>
+    <button class="ghost" id="back">Voltar</button>
+    <div class="err" id="e2"></div>
+  </div>
+
+  <div class="step" id="s3">
+    <h2>Pareado com <span id="paired"></span></h2>
+    <p class="hint mono" id="hosts"></p>
+    <button class="ghost" id="forget">Esquecer este PC</button>
+  </div>
 </div>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var bridge = window.KongPair || null, probed = null;
+  function show(id) { ['s1', 's2', 's3'].forEach(function (s) { $(s).classList.toggle('on', s === id); }); }
+
+  // the app pushes whether a PC is already paired
+  window.onState = function (s) {
+    if (s.paired) { $('paired').textContent = s.pc; $('hosts').textContent = s.hosts; $('status').textContent = 'procurando ' + s.pc + '…'; show('s3'); }
+    else show('s1');
+  };
+  window.onProbe = function (r) {
+    $('go').disabled = false;
+    if (!r.ok) { $('e1').textContent = 'O PC não respondeu. Confira o endereço, o Wi-Fi e se o agente está aberto.'; return; }
+    probed = r; $('check').textContent = r.check; $('pcname').textContent = r.name; $('e2').textContent = ''; show('s2');
+    setTimeout(function () { $('code').focus(); }, 300);
+  };
+  window.onClaim = function (r) {
+    $('pair').disabled = false;
+    if (!r.ok) { $('e2').textContent = r.error || 'Não deu certo.'; return; }
+    $('status').textContent = 'pareado — conectando…';
+  };
+
+  $('go').addEventListener('click', function () {
+    var h = $('host').value.trim();
+    if (!/^[\w.-]+$/.test(h)) { $('e1').textContent = 'Digite o endereço que aparece no PC.'; return; }
+    if (!bridge) { $('e1').textContent = 'Só funciona dentro do app KONGBOX.'; return; }
+    $('e1').textContent = ''; $('go').disabled = true; bridge.probe(h);
+  });
+  $('pair').addEventListener('click', function () {
+    var c = $('code').value.replace(/\D/g, '');
+    if (c.length !== 6) { $('e2').textContent = 'O código tem 6 dígitos.'; return; }
+    $('pair').disabled = true; bridge.claim($('host').value.trim(), probed.fp, c);
+  });
+  $('back').addEventListener('click', function () { show('s1'); });
+  $('forget').addEventListener('click', function () { if (bridge) bridge.forget(); });
+})();
+</script>
 </body>
 </html>

@@ -52,11 +52,9 @@ sealed class QuotaMonitor : IDisposable
         var cred = Json.Parse(await File.ReadAllTextAsync(CredentialsPath, ct))?["claudeAiOauth"];
         var token = cred.Str("accessToken");
         if (token == "") { claudeError = "Sem token OAuth do Claude Code."; return; }
-        if (cred.Num("expiresAt") is > 0 and var exp && DateTimeOffset.FromUnixTimeMilliseconds((long)exp) < DateTimeOffset.UtcNow)
-        {
-            claudeError = "Token expirado: abra o Claude Code uma vez para renovar.";
-            return;
-        }
+        // The token lasts ~8 h and only the Claude Code CLI renews it. The agent never refreshes it itself: refresh
+        // tokens rotate, and renewing here could sign the CLI out. Try anyway; a 401 below explains what to do.
+        var expired = cred.Num("expiresAt") is > 0 and var exp && DateTimeOffset.FromUnixTimeMilliseconds((long)exp) < DateTimeOffset.UtcNow;
         using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.anthropic.com/api/oauth/usage");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         req.Headers.Add("anthropic-beta", "oauth-2025-04-20");
@@ -66,6 +64,13 @@ sealed class QuotaMonitor : IDisposable
             backoff = TimeSpan.FromMinutes(Math.Min(30, backoff.TotalMinutes * 2));
             nextClaude = DateTimeOffset.UtcNow + backoff;
             claudeError = "Limite de consultas; tentando de novo mais tarde.";
+            return;
+        }
+        if (res.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        {
+            claudeError = expired ? "Login vencido: rode \"claude\" no terminal uma vez para renovar." : "O Claude recusou o login deste PC.";
+            // re-read the file soon: the CLI rewrites it as soon as it renews
+            nextClaude = DateTimeOffset.UtcNow.AddMinutes(1);
             return;
         }
         if (!res.IsSuccessStatusCode) { claudeError = $"HTTP {(int)res.StatusCode}"; return; }

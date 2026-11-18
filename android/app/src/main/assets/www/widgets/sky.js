@@ -35,60 +35,92 @@
   KB.wxText = function (code) { return TEXT[code] || '—'; };
 
   function city() { return (KB.cfg && KB.cfg.weather && KB.cfg.weather.city) || ''; }
-  function fail(el) { el.querySelector('.w-b').innerHTML = '<div class="empty">sem dados do clima</div>'; }
+  // ---------- iPad weather look: the card's sky follows the condition and the time of day ----------
+  /** Opaque gradients (cheap to composite), picked like the iPad Weather widget does. */
+  KB.wxSky = function (code, isDay) {
+    var night = isDay === 0;
+    if (code >= 95) return night ? ['#1c2130', '#3a4152'] : ['#3f4756', '#6b7384'];
+    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82) || (code >= 51 && code <= 57)) return night ? ['#16202f', '#33445a'] : ['#4d6178', '#7a8ea4'];
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return night ? ['#2a3446', '#4c5b72'] : ['#8ea2b8', '#c3d1df'];
+    if (code === 3 || code === 45 || code === 48) return night ? ['#1d2532', '#3a4658'] : ['#61788f', '#93a8bd'];
+    if (code === 2) return night ? ['#0f1d3d', '#2f4473'] : ['#3a7bc8', '#86b4e3'];
+    return night ? ['#081633', '#22397a'] : ['#2f7fd8', '#78b6ef'];
+  };
+  function paintSky(el, code, isDay) {
+    var s = KB.wxSky(code, isDay);
+    el.style.background = 'linear-gradient(180deg,' + s[0] + ',' + s[1] + ')';
+    el.classList.add('sky');
+  }
+  function hourly(d, count) {
+    var h = d.hourly, now = Date.now(), start = 0, out = [];
+    for (var j = 0; j < h.time.length; j++) if (new Date(h.time[j]).getTime() > now - 3600000) { start = j; break; }
+    for (var k = start; k < Math.min(h.time.length, start + count); k++)
+      out.push({ k: k === start ? 'Agora' : new Date(h.time[k]).getHours() + 'h', code: h.weather_code[k], day: h.is_day[k], t: Math.round(h.temperature_2m[k]) + '°', p: h.precipitation_probability[k] });
+    return out;
+  }
+  function daily(d) {
+    var dd = d.daily, out = [];
+    for (var i = 0; i < dd.time.length; i++) {
+      var day = new Date(dd.time[i] + 'T12:00');
+      out.push({ k: i === 0 ? 'Hoje' : day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''), code: dd.weather_code[i], max: Math.round(dd.temperature_2m_max[i]), min: Math.round(dd.temperature_2m_min[i]), p: dd.precipitation_probability_max[i] });
+    }
+    return out;
+  }
+  function hourRow(items) {
+    return '<div class="wx-h">' + items.map(function (x) {
+      return '<div><span>' + esc(x.k) + '</span>' + KB.wxIcon(x.code, x.day) + '<b class="num">' + x.t + '</b></div>';
+    }).join('') + '</div>';
+  }
+  function dayList(items) {
+    var lo = Math.min.apply(null, items.map(function (x) { return x.min; })), hi = Math.max.apply(null, items.map(function (x) { return x.max; }));
+    var span = Math.max(1, hi - lo);
+    return '<div class="wx-dl">' + items.map(function (x) {
+      return '<div><span class="wdn">' + esc(x.k) + '</span>' + KB.wxIcon(x.code, 1) + '<span class="pp num">' + (x.p >= 30 ? x.p + '%' : '') + '</span>' +
+        '<span class="num lo">' + x.min + '°</span><span class="rg"><i style="left:' + ((x.min - lo) / span * 100).toFixed(1) + '%;right:' + ((hi - x.max) / span * 100).toFixed(1) + '%"></i></span><span class="num">' + x.max + '°</span></div>';
+    }).join('') + '</div>';
+  }
+  function fail(el) { el.innerHTML = '<div class="empty">sem dados do clima</div>'; el.classList.remove('sky'); el.style.background = ''; }
 
-  // ---------- weather ----------
+  // ---------- weather: small = now; wide adds the next hours; tall adds the week ----------
   KB.def('weather', {
     mount: function (el) {
-      el.innerHTML = KB.header(city().toLowerCase() || 'weather') + '<div class="w-b wn"></div>';
-      var b = el.querySelector('.w-b');
       function load() {
         KB.weather().then(function (d) {
           var c = d.current, t = d.daily;
-          b.innerHTML = '<div class="wn-top">' + KB.wxIcon(c.weather_code, c.is_day) + '<div class="wn-t num">' + Math.round(c.temperature_2m) + '°</div></div>' +
-            '<div class="wn-c">' + esc(KB.wxText(c.weather_code)) + '</div>' +
-            '<div class="wn-m mono dim">↑' + Math.round(t.temperature_2m_max[0]) + '° ↓' + Math.round(t.temperature_2m_min[0]) + '° · sente ' + Math.round(c.apparent_temperature) + '° · ' + Math.round(c.relative_humidity_2m) + '%</div>';
+          paintSky(el, c.weather_code, c.is_day);
+          el.innerHTML =
+            '<div class="wxc">' +
+            '<div class="wx-top"><div><div class="wx-city">' + esc(city() || 'Clima') + ' ' + KBIcons.html('arrow') + '</div><div class="wx-t num">' + Math.round(c.temperature_2m) + '°</div></div>' +
+            '<div class="wx-now">' + KB.wxIcon(c.weather_code, c.is_day) + '<div>' + esc(KB.wxText(c.weather_code)) + '</div><div class="num">Máx.: ' + Math.round(t.temperature_2m_max[0]) + '° Mín.: ' + Math.round(t.temperature_2m_min[0]) + '°</div></div></div>' +
+            hourRow(hourly(d, 6)) + dayList(daily(d).slice(0, 6)) +
+            '</div>';
         }).catch(function () { fail(el); });
       }
       load();
-      var t = setInterval(load, 600000);
-      return { destroy: function () { clearInterval(t); } };
+      var timer = setInterval(load, 600000);
+      return { destroy: function () { clearInterval(timer); } };
     },
   });
 
-  // ---------- forecast ----------
+  // ---------- forecast: the same sky, hourly or the week ----------
   KB.def('forecast', {
     mount: function (el, w) {
       var mode = KB.opt(w, 'mode', 'hourly');
-      el.innerHTML = KB.header(mode === 'daily' ? '7 dias' : 'próximas horas', esc(city())) + '<div class="w-b fc"></div>';
-      var b = el.querySelector('.w-b');
       function load() {
         KB.weather().then(function (d) {
-          var items = [];
-          if (mode === 'daily') {
-            var dd = d.daily;
-            for (var i = 0; i < dd.time.length; i++) {
-              var day = new Date(dd.time[i] + 'T12:00');
-              items.push({ k: i === 0 ? 'hoje' : day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''), code: dd.weather_code[i], day: 1, t: Math.round(dd.temperature_2m_max[i]) + '°', s: Math.round(dd.temperature_2m_min[i]) + '°', p: dd.precipitation_probability_max[i] });
-            }
-          } else {
-            var h = d.hourly, now = Date.now(), start = 0;
-            for (var j = 0; j < h.time.length; j++) if (new Date(h.time[j]).getTime() > now - 3600000) { start = j; break; }
-            for (var k = start; k < Math.min(h.time.length, start + 8); k++) {
-              items.push({ k: k === start ? 'agora' : new Date(h.time[k]).getHours() + 'h', code: h.weather_code[k], day: h.is_day[k], t: Math.round(h.temperature_2m[k]) + '°', p: h.precipitation_probability[k] });
-            }
-          }
-          b.innerHTML = items.map(function (x, i) {
-            return '<div class="fc-i" style="--i:' + i + '"><span class="mono">' + esc(x.k) + '</span>' + KB.wxIcon(x.code, x.day) + '<b class="num">' + x.t + '</b>' +
-              (x.s ? '<span class="faint num">' + x.s + '</span>' : '') + (x.p >= 20 ? '<span class="fc-p num">' + x.p + '%</span>' : '<span class="fc-p"></span>') + '</div>';
-          }).join('');
+          var c = d.current;
+          paintSky(el, c.weather_code, c.is_day);
+          el.innerHTML = '<div class="fx"><div class="fx-h"><span>' + esc(city() || 'Previsão') + '</span><span class="num">' + Math.round(c.temperature_2m) + '° ' + esc(KB.wxText(c.weather_code)) + '</span></div>' +
+            (mode === 'daily' ? dayList(daily(d)) : hourRow(hourly(d, 8))) + '</div>';
         }).catch(function () { fail(el); });
       }
       load();
-      var t = setInterval(load, 600000);
-      return { destroy: function () { clearInterval(t); } };
+      var timer = setInterval(load, 600000);
+      return { destroy: function () { clearInterval(timer); } };
     },
   });
+
+  function failBody(el) { var b = el.querySelector('.w-b'); if (b) b.innerHTML = '<div class="empty">sem dados do clima</div>'; }
 
   // ---------- moon ----------
   var PHASES = ['Lua nova', 'Crescente', 'Quarto crescente', 'Crescente gibosa', 'Lua cheia', 'Minguante gibosa', 'Quarto minguante', 'Minguante'];
@@ -139,7 +171,7 @@
           '<div class="sn-r mono"><span>↑ ' + KB.fmt.time(rise) + '</span><span>' + (up ? fmt.dur((set - now) / 1000) + ' de luz' : 'noite') + '</span><span>↓ ' + KB.fmt.time(set) + '</span></div>' +
           '<div class="sn-r mono dim"><span>UV ' + Math.round(d.uv_index_max[0]) + '</span><span>' + m.name.toLowerCase() + ' · ' + Math.round(m.illum * 100) + '%</span></div>';
       }
-      function load() { KB.weather().then(function (d) { data = d; draw(); }).catch(function () { fail(el); }); }
+      function load() { KB.weather().then(function (d) { data = d; draw(); }).catch(function () { failBody(el); }); }
       load();
       var t1 = setInterval(load, 600000), t2 = setInterval(draw, 60000);
       return { destroy: function () { clearInterval(t1); clearInterval(t2); } };
@@ -168,7 +200,7 @@
             '<div class="aq-g mono">' + [['PM2.5', c.pm2_5], ['PM10', c.pm10], ['O₃', c.ozone], ['NO₂', c.nitrogen_dioxide]].map(function (x) {
               return '<span><i class="faint">' + x[0] + '</i> ' + Math.round(x[1]) + '</span>';
             }).join('') + '</div>';
-        }).catch(function () { fail(el); });
+        }).catch(function () { failBody(el); });
       }
       load();
       var t = setInterval(load, 1200000);

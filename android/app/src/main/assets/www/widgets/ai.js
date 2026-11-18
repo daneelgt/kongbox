@@ -8,7 +8,7 @@
     var c = KB.levelColor(win.pct);
     var fc = win.fullAt
       ? '<span style="color:var(--amber)">no ritmo atual: cheio ' + fmt.until(win.fullAt) + '</span>'
-      : win.resetsAt ? '<span class="faint">✓ dura até o reset</span>' : '';
+      : win.resetsAt ? '<span class="faint qt-ok">' + KBIcons.html('check') + ' dura até o reset</span>' : '';
     return '<div class="qt-w"><div class="qt-r"><span>' + esc(win.label) + '</span><b class="num" style="color:' + c + '">' + fmt.pct(win.pct) + '</b></div>' +
       '<div class="bar" style="--c:' + c + '"><i style="width:' + KB.clamp(win.pct, 0, 100) + '%"></i></div>' +
       '<div class="qt-r mono qt-s"><span class="dim">' + (win.resetsAt ? 'reseta ' + fmt.until(win.resetsAt) : '') + '</span>' + fc + '</div></div>';
@@ -19,6 +19,7 @@
       var want = KB.list(KB.opt(w, 'providers', 'claude, codex'));
       el.innerHTML = KB.header('ai quotas', '<span class="qt-u"></span>') + '<div class="w-b qt"></div>';
       var b = el.querySelector('.w-b'), u = el.querySelector('.qt-u'), sig = '';
+      el.addEventListener('click', function () { KB.act('/api/refresh').then(function () { u.textContent = 'atualizando…'; }); });
       return {
         update: function (s, full) {
           if (!full || !s.quotas) return;
@@ -49,7 +50,7 @@
           var q = s.quotas.filter(function (x) { return x.provider === prov; })[0];
           var x = q && (q.windows || []).filter(function (y) { return y.id === win; })[0];
           if (!x) { v.textContent = '–'; sub.textContent = q && q.error ? 'sem dados' : ''; return; }
-          v.textContent = fmt.pct(x.pct);
+          KB.tween(v, x.pct, fmt.pct);
           sub.textContent = x.resetsAt ? '↺ ' + fmt.dur((x.resetsAt - Date.now()) / 1000) : '';
           KB.setRing(ring, x.pct, x.pct >= 90 ? 'var(--red)' : (BRAND[prov] || 'var(--accent)'));
         },
@@ -71,8 +72,12 @@
       '<dt>tokens entrada</dt><dd>' + fmt.num(t['in']) + '</dd><dt>tokens saída</dt><dd>' + fmt.num(t.out) + '</dd>' +
       '<dt>cache lido</dt><dd>' + fmt.num(t.cacheRead) + '</dd>' + (t.cacheWrite ? '<dt>cache escrito</dt><dd>' + fmt.num(t.cacheWrite) + '</dd>' : '') + '</dl>' +
       '<div class="meta">Os tokens descrevem esta sessão local, não a cota da conta. Nenhum texto de prompt sai do PC.</div>' +
-      '<div class="acts"><button class="btn press">Fechar</button></div>', function (root) {
-      root.querySelector('.acts button').addEventListener('click', KB.closeSheet);
+      '<div class="acts"><button class="btn press" data-x="close">Fechar</button>' + (x.canOpen ? '<button class="btn primary press" data-x="code">Abrir no VS Code</button>' : '') + '</div>', function (root) {
+      root.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-x]'); if (!b) return;
+        if (b.dataset.x === 'code') KB.act('/api/sessions/open', { id: x.id });
+        KB.closeSheet();
+      });
     });
   }
   KB.def('sessions', {
@@ -107,21 +112,126 @@
     if (r.conclusion === 'failure' || r.conclusion === 'timed_out') return ['var(--red)', false];
     return ['var(--text-3)', false];
   }
+  function checksDot(c) {
+    if (!c) return '';
+    var color = c.failed ? 'var(--red)' : c.running ? 'var(--amber)' : c.ok ? 'var(--green)' : 'var(--text-3)';
+    return '<i class="dot' + (c.running && !c.failed ? ' pulse' : '') + '" style="--c:' + color + '"></i>';
+  }
+  function checksText(c) {
+    if (!c) return 'sem checks';
+    var bits = [];
+    if (c.failed) bits.push(c.failed + ' falharam');
+    if (c.running) bits.push(c.running + ' rodando');
+    if (c.ok) bits.push(c.ok + ' ok');
+    return bits.join(' · ') || 'sem checks';
+  }
+  function prSheet(repo, p) {
+    var armed = false;
+    KB.sheet('<h3>#' + p.number + ' ' + esc(p.title) + '</h3><div class="meta">' + esc(repo) + ' · ' + esc(p.author) + ' · ' + esc(p.branch || '') + ' → ' + esc(p.base || '') + '</div>' +
+      '<dl class="kv"><dt>checks</dt><dd>' + checksDot(p.checks) + ' ' + checksText(p.checks) + '</dd><dt>estado</dt><dd>' + (p.draft ? 'rascunho' : p.reviewRequested ? 'revisão pedida para você' : 'aberto') + '</dd></dl>' +
+      '<div class="acts"><button class="btn press" data-x="open">Abrir no PC</button>' +
+      (p.mine ? '' : '<button class="btn ok press" data-x="approve">Aprovar</button>') +
+      '<button class="btn danger press" data-x="merge">Mesclar</button></div>' +
+      '<div class="meta" style="margin:12px 0 0">Aprovar e mesclar pedem um token com escrita em Pull requests (Integrações › GitHub).</div>',
+      function (root) {
+        root.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-x]'); if (!b) return;
+          if (b.dataset.x === 'open') { KB.act('/api/github/open', { repo: repo, pr: p.number }); KB.closeSheet(); return; }
+          if (b.dataset.x === 'approve') { KB.act('/api/github/act', { action: 'approve', repo: repo, pr: p.number }); KB.closeSheet(); return; }
+          if (b.dataset.x === 'merge') {
+            // merging is not undoable from the panel: the first tap arms, the second one merges
+            if (!armed) { armed = true; KB.haptic(); b.textContent = 'Toque de novo para mesclar'; setTimeout(function () { armed = false; b.textContent = 'Mesclar'; }, 3000); return; }
+            KB.act('/api/github/act', { action: 'merge', repo: repo, pr: p.number }); KB.closeSheet();
+          }
+        });
+      });
+  }
+  function runSheet(repo, run) {
+    var c = runColor(run);
+    KB.sheet('<h3>' + esc(run.name || 'Workflow') + '</h3><div class="meta">' + esc(repo) + ' · ' + esc(run.branch || '') + '</div>' +
+      '<dl class="kv"><dt>resultado</dt><dd><i class="dot" style="--c:' + c[0] + ';display:inline-block"></i> ' + esc(run.status === 'completed' ? (run.conclusion || '—') : run.status) + '</dd></dl>' +
+      '<div class="acts"><button class="btn press" data-x="open">Abrir no PC</button>' +
+      (run.status === 'completed' && run.conclusion !== 'success' ? '<button class="btn primary press" data-x="rerun">Re-executar falhas</button>' : '') + '</div>',
+      function (root) {
+        root.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-x]'); if (!b) return;
+          if (b.dataset.x === 'open') KB.act('/api/github/open', { repo: repo, run: run.id });
+          if (b.dataset.x === 'rerun') KB.act('/api/github/act', { action: 'rerun', repo: repo, run: run.id });
+          KB.closeSheet();
+        });
+      });
+  }
+  function ago(iso) { var t = Date.parse(iso || ''); return isNaN(t) ? '' : fmt.ago(t); }
+  function localChip(l) {
+    if (!l) return '<span class="chip faint">não clonado</span>';
+    if (l.error) return '<span class="chip" style="color:var(--amber)">erro no git</span>';
+    var bits = [];
+    if (l.changes) bits.push(l.changes + (l.changes === 1 ? ' alteração' : ' alterações'));
+    if (l.ahead) bits.push('↑' + l.ahead);
+    if (l.behind) bits.push('↓' + l.behind);
+    var color = l.behind ? 'var(--amber)' : l.changes || l.ahead ? 'var(--accent)' : 'var(--green)';
+    return '<span class="chip" style="color:' + color + '">' + (bits.join(' · ') || 'sincronizado') + '</span>';
+  }
+  function repoSheet(r) {
+    var l = r.local;
+    var commits = (r.commits || []).map(function (c) {
+      return '<div class="cm"><span class="mono faint">' + esc(c.sha) + '</span><span class="grow">' + esc(c.message) + '</span><span class="faint">' + esc(ago(c.date).replace('há ', '')) + '</span></div>';
+    }).join('') || '<div class="faint">sem commits</div>';
+    var acts = '<button class="btn press" data-x="web">Abrir no GitHub</button>';
+    if (l) {
+      acts += '<button class="btn primary press" data-x="code">VS Code</button>';
+      if (l.behind) acts += '<button class="btn press" data-x="pull">Puxar ↓' + l.behind + '</button>';
+      if (l.ahead) acts += '<button class="btn press" data-x="push">Enviar ↑' + l.ahead + '</button>';
+    } else acts += '<button class="btn primary press" data-x="clone">Clonar neste PC</button>';
+    KB.sheet('<h3>' + esc(r.repo.split('/')[1]) + '</h3><div class="meta">' + esc(r.repo) + (r.language ? ' · ' + esc(r.language) : '') + ' · ★ ' + (r.stars || 0) + ' · ' + (r.issues || 0) + ' issues</div>' +
+      (r.description ? '<div class="dim" style="margin:-6px 0 12px">' + esc(r.description) + '</div>' : '') +
+      (l ? '<dl class="kv"><dt>no PC</dt><dd class="mono">' + esc(l.path) + '</dd><dt>branch</dt><dd class="mono">' + esc(l.branch || '—') + '</dd><dt>estado</dt><dd>' + localChip(l) + '</dd></dl>' : '') +
+      '<div class="cms">' + commits + '</div>' +
+      '<div class="acts" style="flex-wrap:wrap">' + acts + '</div>',
+      function (root) {
+        root.addEventListener('click', function (e) {
+          var b = e.target.closest('[data-x]'); if (!b) return;
+          var x = b.dataset.x;
+          if (x === 'web') KB.act('/api/github/open', { repo: r.repo });
+          else {
+            if (x === 'clone' || x === 'pull' || x === 'push') KB.toast({ title: { clone: 'Clonando…', pull: 'Puxando…', push: 'Enviando…' }[x], text: r.repo, seconds: 3 });
+            KB.act('/api/github/local', { repo: r.repo, action: x });
+          }
+          KB.closeSheet();
+        });
+      });
+  }
   KB.def('github', {
     mount: function (el) {
       el.innerHTML = KB.header('github') + '<div class="w-b rows gh"></div>';
-      var b = el.querySelector('.w-b');
+      var b = el.querySelector('.w-b'), repos = [], sig = '';
+      b.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-pr],[data-run],[data-repo]'); if (!t) return;
+        KB.haptic();
+        var r = repos[+t.dataset.r]; if (!r) return;
+        if (t.dataset.pr != null) prSheet(r.repo, r.pulls[+t.dataset.pr]);
+        else if (t.dataset.run != null) runSheet(r.repo, r.runs[+t.dataset.run]);
+        else repoSheet(r);
+      });
       return {
         update: function (s, full) {
           if (!full || !s.github) return;
           var g = s.github;
-          if (g.empty) { b.innerHTML = '<div class="empty">adicione repositórios em Geral › GitHub</div>'; return; }
-          var html = (g.repos || []).map(function (r) {
+          // redraw only when something changed: a rebuild every poll would waste the phone's time and could eat a tap
+          var next = JSON.stringify([g.repos, g.error, g.empty]);
+          if (next === sig) return;
+          sig = next;
+          if (g.empty) { b.innerHTML = '<div class="empty">conecte o GitHub em Integrações</div>'; return; }
+          repos = g.repos || [];
+          var html = repos.map(function (r, ri) {
             var run = (r.runs || [])[0], rc = run ? runColor(run) : null;
-            return '<div class="gh-r"><div class="gh-h"><span class="mono">' + esc(r.repo) + '</span>' +
-              (run ? '<span class="chip"><i class="dot' + (rc[1] ? ' pulse' : '') + '" style="--c:' + rc[0] + ';display:inline-block;vertical-align:middle"></i> ' + esc(run.name || 'ci') + '</span>' : '') + '</div>' +
-              (r.pulls || []).slice(0, 4).map(function (p) {
-                return '<div class="row"><span class="mono faint">#' + p.number + '</span><span class="grow">' + esc(p.title) + '</span>' +
+            var last = (r.commits || [])[0];
+            return '<div class="gh-r"><div class="row press gh-repo" data-repo data-r="' + ri + '"><span class="grow"><b>' + esc(r.repo.split('/')[1]) + '</b>' +
+              (r.language ? ' <span class="faint" style="font-size:.8em">' + esc(r.language) + '</span>' : '') +
+              '<span class="sub mono">' + (last ? esc(last.message) + ' · ' + esc(ago(last.date)) : 'sem commits') + '</span></span>' + localChip(r.local) +
+              (run ? '<span class="chip press" data-run="0" data-r="' + ri + '"><i class="dot' + (rc[1] ? ' pulse' : '') + '" style="--c:' + rc[0] + ';display:inline-block;vertical-align:middle"></i> ' + esc(run.name || 'ci') + '</span>' : '') + '</div>' +
+              (r.pulls || []).slice(0, 3).map(function (p, pi) {
+                return '<div class="row press gh-pr" data-pr="' + pi + '" data-r="' + ri + '">' + checksDot(p.checks) + '<span class="mono faint">#' + p.number + '</span><span class="grow">' + esc(p.title) + '</span>' +
                   (p.reviewRequested ? '<span class="chip" style="color:var(--amber)">revisar</span>' : p.draft ? '<span class="chip">draft</span>' : '<span class="chip">' + esc(p.author) + '</span>') + '</div>';
               }).join('') + '</div>';
           }).join('');

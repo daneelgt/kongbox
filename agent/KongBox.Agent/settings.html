@@ -55,6 +55,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: v
 .item { display: flex; align-items: center; gap: 14px; padding: 11px 16px; min-height: 46px; border-top: 1px solid var(--line); }
 .item:first-child { border-top: 0; }
 .item > label, .item > .lbl { flex: 1; min-width: 0; }
+.item > label.sw { flex: none; } /* a switch keeps its size even though it is a label */
 .item small { display: block; color: var(--text-2); font-size: 12px; margin-top: 1px; }
 input[type=text], input[type=number], input[type=password], input[type=time], select, textarea {
   border: 1px solid var(--line-2); background: var(--card-2); border-radius: 8px; padding: 6px 9px; outline: none; transition: border-color .15s, box-shadow .15s; min-width: 0;
@@ -186,6 +187,53 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
 .swatches button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); transition: transform .2s var(--spring); }
 .swatches button.on { border-color: var(--text); transform: scale(1.12); }
 
+.ic { width: 1em; height: 1em; display: inline-block; vertical-align: -.14em; flex: none; }
+.nav i .ic { width: 17px; height: 17px; }
+.pg .e .ic, .pw .e .ic { width: 18px; height: 18px; color: var(--accent); }
+.pg.on .e .ic { color: var(--accent); }
+.box .bi .ic { width: 18px; height: 18px; color: #64d2ff; }
+.tp .e .ic { width: 26px; height: 26px; color: var(--accent); }
+.sc .face .ic { width: 26px; height: 26px; }
+.iconbtn { width: 38px; height: 34px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--card-2); display: grid; place-items: center; color: var(--accent); }
+.iconbtn .ic { width: 19px; height: 19px; }
+#picker { position: fixed; z-index: 80; width: 336px; max-height: 360px; overflow: auto; padding: 10px; border-radius: 14px; background: var(--card); border: 1px solid var(--line-2); box-shadow: 0 20px 60px rgba(0,0,0,.35); display: none; }
+#picker.show { display: block; animation: in .25s var(--ease); }
+#picker .ig { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+#picker .ig button { aspect-ratio: 1; border: 0; border-radius: 8px; background: none; display: grid; place-items: center; color: var(--text); }
+#picker .ig button:hover, #picker .ig button.on { background: var(--accent); color: #fff; }
+#picker .ig .ic { width: 20px; height: 20px; }
+#picker input { width: 100%; margin-top: 8px; }
+.pair { display: grid; grid-template-columns: 220px 1fr; gap: 22px; padding: 18px; align-items: center; }
+.pair .qr { background: #fff; border-radius: 14px; padding: 10px; }
+.pair .qr svg { width: 100%; height: auto; display: block; }
+.pair .code { font: 700 34px var(--mono); letter-spacing: .12em; }
+.pair .check { font: 600 18px var(--mono); color: var(--green); letter-spacing: .06em; }
+.pair dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 0; font-size: 13px; }
+.pair dt { color: var(--text-2); }
+.pair dd { margin: 0; font-family: var(--mono); }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+
+.ig-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 18px; margin-bottom: 14px; }
+.ig-h { display: flex; align-items: center; gap: 14px; }
+.ig-h > div:nth-child(2) { flex: 1; min-width: 0; }
+.ig-h b { font-size: 16px; }
+.ig-h small { display: block; color: var(--text-2); font-size: 12.5px; }
+.ig-ic { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; color: #fff; flex: none; }
+.ig-ic .ic { width: 22px; height: 22px; }
+.ig-b { margin: 12px 0 0; font-size: 13.5px; }
+.ig-b:empty { display: none; }
+.ig-steps { margin: 12px 0 0; padding-left: 20px; color: var(--text-2); font-size: 13.5px; line-height: 1.8; }
+.ig-steps code.copy { cursor: copy; }
+.ig-card.ok .ig-steps { display: none; }
+.ig-card.ok.open .ig-steps { display: block; }
+.ig-more { font-size: 12.5px; margin-top: 8px; }
+.qbar { display: grid; grid-template-columns: 9em 1fr 3.5em; gap: 10px; align-items: center; margin: 6px 0; }
+.qbar .t { height: 7px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.qbar .t i { display: block; height: 100%; border-radius: inherit; }
+.gh-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px; margin-top: 8px; }
+.gh-list label { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 9px; background: var(--card-2); border: 1px solid var(--line); color: var(--text); cursor: pointer; font-size: 13px; }
+.gh-list label small { color: var(--text-3); margin-left: auto; }
+
 @media (max-width: 1180px) { .ed { grid-template-columns: 1fr; } .side-r { position: static; max-height: none; } .plist { flex-direction: row; flex-wrap: wrap; } .pg { width: auto; } }
 @media (max-width: 760px) { #app { grid-template-columns: 1fr; } aside { flex-direction: row; overflow-x: auto; padding: 8px; } aside .foot, .brand span { display: none; } .view { padding: 18px 16px 120px; } .nav span { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
@@ -195,13 +243,14 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
 <div id="app">
   <aside>
     <div class="brand"><div class="lg">K</div><div><b>KONGBOX</b><span id="ver">agent</span></div></div>
-    <button class="nav on" data-v="pages"><i>▦</i><span>Páginas</span></button>
-    <button class="nav" data-v="shortcuts"><i>⌘</i><span>Atalhos</span></button>
-    <button class="nav" data-v="rules"><i>⚡</i><span>Regras</span></button>
-    <button class="nav" data-v="webhooks"><i>⇄</i><span>Webhooks</span></button>
-    <button class="nav" data-v="phone"><i>▯</i><span>Celular</span></button>
-    <button class="nav" data-v="general"><i>⚙</i><span>Geral</span></button>
-    <button class="nav" data-v="advanced"><i>{}</i><span>Avançado</span></button>
+    <button class="nav on" data-v="pages"><i data-icon="grid"></i><span>Páginas</span></button>
+    <button class="nav" data-v="shortcuts"><i data-icon="keyboard"></i><span>Atalhos</span></button>
+    <button class="nav" data-v="rules"><i data-icon="bolt"></i><span>Regras</span></button>
+    <button class="nav" data-v="webhooks"><i data-icon="webhook"></i><span>Webhooks</span></button>
+    <button class="nav" data-v="integrations"><i data-icon="link"></i><span>Integrações</span></button>
+    <button class="nav" data-v="phone"><i data-icon="phone"></i><span>Celular</span></button>
+    <button class="nav" data-v="general"><i data-icon="gear"></i><span>Geral</span></button>
+    <button class="nav" data-v="advanced"><i data-icon="braces"></i><span>Avançado</span></button>
     <div class="foot" id="foot">conectando…</div>
   </aside>
   <main>
@@ -220,7 +269,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
         </div>
         <div>
           <div class="stage-h">
-            <input class="icon" id="pIcon" maxlength="4" title="Ícone">
+            <button class="iconbtn" id="pIcon" title="Ícone da página"></button>
             <input class="title" id="pTitle" title="Título">
             <label class="row dim" style="gap:6px;font-size:13px"><span class="sw"><input type="checkbox" id="pEnabled"><span></span></span>visível</label>
             <span style="flex:1"></span>
@@ -272,16 +321,92 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       <h2>Testar</h2>
       <div class="group"><div class="item"><div class="lbl">Notificação de teste<small>aparece no topo do celular, estilo Dynamic Island</small></div><button class="btn" id="whNotify">Enviar</button></div>
         <div class="item"><div class="lbl">Valor de teste <code>build = passed</code></div><button class="btn" id="whPush">Enviar</button></div>
-        <div class="item"><div class="lbl">Recarregar o painel do celular</div><button class="btn" id="whReload">Recarregar</button></div></div>
+        <div class="item"><div class="lbl">Recarregar o painel do celular</div><button class="btn" id="whReload">Recarregar</button></div>
+        <div class="item"><div class="lbl">Limpar a caixa de notificações<small>apaga as notificações guardadas no PC</small></div><button class="btn danger" id="whClear">Limpar</button></div></div>
       <h2>Valores atuais</h2>
       <div class="group" id="whValues"></div>
+    </section>
+
+    <!-- INTEGRATIONS -->
+    <section class="view" id="v-integrations">
+      <h1>Integrações</h1>
+      <p class="lead">O que o KONGBOX lê do seu PC e da sua conta. Cada cartão diz se está funcionando e, se não estiver, o que fazer.</p>
+
+      <div class="ig-card" id="igClaude">
+        <div class="ig-h"><div class="ig-ic" style="background:#d97757" data-icon="sparkle"></div><div><b>Claude</b><small>cotas de uso (sessão de 5 h e semanal) e sessões do Claude Code</small></div><span class="chip" data-st></span>
+          <label class="sw"><input type="checkbox" data-k="quotas.claude"><span></span></label></div>
+        <div class="ig-b" data-body></div>
+        <ol class="ig-steps">
+          <li>Instale o Claude Code no PC: <code class="copy">npm install -g @anthropic-ai/claude-code</code></li>
+          <li>Abra um terminal, rode <code class="copy">claude</code> e entre com a sua conta Pro ou Max.</li>
+          <li>Pronto: o KONGBOX lê o seu uso sozinho. O login dura umas 8 horas; quando vencer, rode <code class="copy">claude</code> de novo no terminal.</li>
+        </ol>
+      </div>
+
+      <div class="ig-card" id="igCodex">
+        <div class="ig-h"><div class="ig-ic" style="background:#10a37f" data-icon="code"></div><div><b>Codex</b><small>cotas e sessões, lidas dos arquivos locais do Codex (nada sai do PC)</small></div><span class="chip" data-st></span>
+          <label class="sw"><input type="checkbox" data-k="quotas.codex"><span></span></label></div>
+        <div class="ig-b" data-body></div>
+        <ol class="ig-steps">
+          <li>Instale o Codex CLI: <code class="copy">npm install -g @openai/codex</code></li>
+          <li>Rode <code class="copy">codex</code> e entre com a sua conta ChatGPT.</li>
+          <li>Use o Codex uma vez: as cotas aparecem assim que ele grava a primeira sessão.</li>
+        </ol>
+      </div>
+
+      <div class="ig-card" id="igNotif">
+        <div class="ig-h"><div class="ig-ic" style="background:#ff3b30" data-icon="bell"></div><div><b>Notificações do Windows</b><small>WhatsApp, Discord, e-mail… aparecem no celular; toque para abrir o app no PC</small></div><span class="chip" data-st></span>
+          <label class="sw"><input type="checkbox" data-k="notifications.windows"><span></span></label></div>
+        <div class="ig-b" data-body></div>
+        <ol class="ig-steps">
+          <li>Ligue o interruptor e salve. Não precisa instalar nada: o KONGBOX lê a Central de Notificações do Windows.</li>
+          <li>Os apps precisam ter notificações ligadas no Windows (Configurações › Sistema › Notificações).</li>
+          <li>Para esconder um app, escreva o nome dele aqui (um por linha): <textarea id="notifIgnore" rows="2" placeholder="ex.: Teams" style="margin-top:6px"></textarea></li>
+        </ol>
+      </div>
+
+      <div class="ig-card" id="igHook">
+        <div class="ig-h"><div class="ig-ic" style="background:#5e5ce6" data-icon="shield"></div><div><b>Permissões do Claude Code no celular</b><small>quando o Claude Code pedir para rodar um comando, você aprova ou nega pelo painel</small></div><span class="chip" data-st></span>
+          <label class="sw"><input type="checkbox" data-k="claudeHook.enabled"><span></span></label></div>
+        <div class="ig-b"><div class="row"><span class="dim" id="hookState">verificando…</span><span style="flex:1"></span><button class="btn" id="hookBtn">Instalar hook</button></div></div>
+        <ol class="ig-steps">
+          <li>Ligue o interruptor acima e clique em <b>Instalar hook</b> (fica um backup do seu <code>~/.claude/settings.json</code>).</li>
+          <li>Salve. Na próxima vez que o Claude Code pedir permissão, o celular mostra Permitir / Negar.</li>
+          <li>Ninguém respondeu em ~50 s? O terminal pergunta como sempre: nada trava.</li>
+        </ol>
+      </div>
+
+      <div class="ig-card" id="igGitHub">
+        <div class="ig-h"><div class="ig-ic" style="background:#24292f" data-icon="branch"></div><div><b>GitHub</b><small>pull requests abertos, revisões pedidas para você e o status do CI</small></div><span class="chip" data-st></span></div>
+        <div class="ig-b" data-body></div>
+        <ol class="ig-steps">
+          <li>Crie um token só de leitura: <button class="btn sm" id="ghNewToken">Abrir GitHub › novo token</button>
+            <div class="dim" style="font-size:12.5px;margin-top:4px">Em "Repository access" escolha os repositórios. Em "Permissions":<br>
+            · <b>só ver</b> PRs e CI no painel: <b>Read-only</b> em <i>Pull requests</i>, <i>Actions</i> e <i>Metadata</i>;<br>
+            · <b>aprovar, mesclar e re-executar</b> pelo celular: <b>Read and write</b> em <i>Pull requests</i> e <i>Actions</i>.</div></li>
+          <li>Cole aqui: <input type="password" data-k="github.token" id="ghToken" autocomplete="off" placeholder="github_pat_…" style="width:280px"> <button class="btn sm" id="ghLoad">Carregar meus repositórios</button> <button class="btn sm" id="ghClones">Só os clonados neste PC</button></li>
+          <li>Marque os repositórios que o painel deve acompanhar (até 8):
+            <div id="ghList" class="gh-list"></div>
+            <textarea id="ghRepos" rows="2" placeholder="ou digite: dono/nome, um por linha" style="margin-top:8px"></textarea></li>
+          <li>Salve. O widget <b>GitHub</b> (página Sessões) atualiza a cada 2 minutos. No celular, toque num PR para ver os checks, abrir no PC, aprovar ou mesclar; toque no CI para re-executar o que falhou.</li>
+        </ol>
+      </div>
     </section>
 
     <!-- PHONE -->
     <section class="view" id="v-phone">
       <h1>Celular</h1>
       <p class="lead">Ligue o celular via USB com a depuração USB ativa. O agente mantém <code>adb reverse tcp:8765</code> sozinho.</p>
+      <h2>USB</h2>
       <div class="group" id="phones"></div>
+      <h2>Wi-Fi</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Conectar pelo Wi-Fi<small>HTTPS na porta 8766, só para celulares pareados. Mudar isto reinicia o agente.</small></div><label class="sw"><input type="checkbox" id="lanOn"><span></span></label></div>
+        <div class="item"><div class="lbl">Endereços deste PC<small id="lanIps" class="mono">—</small></div><button class="btn" id="pairBtn">Parear pelo Wi-Fi</button></div>
+      </div>
+      <div class="group" id="pairBox" style="margin-top:12px" hidden></div>
+      <h2>Celulares pareados</h2>
+      <div class="group" id="lanPhones"></div>
       <h2>Ferramentas</h2>
       <div class="group" id="phoneInfo"></div>
     </section>
@@ -296,7 +421,14 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       </div>
       <h2>Aparência</h2>
       <div class="group">
-        <div class="item"><div class="lbl">Estilo dos cards</div><div class="seg" id="apPreset"><button data-p="glass">Vidro</button><button data-p="flat">Plano</button><button data-p="seamless">Sem borda</button></div></div>
+        <div class="item"><div class="lbl">Papel de parede</div><div class="seg" id="apWall"><button data-w="aurora">Aurora</button><button data-w="sunset">Pôr do sol</button><button data-w="graphite">Grafite</button><button data-w="oled">OLED</button><button data-w="custom">Minha foto</button></div></div>
+        <div class="item" id="wallRow"><div class="lbl">Sua foto<small id="wallInfo">JPG ou PNG · reduzida para 2560 px no PC</small></div><img id="wallThumb" alt="" style="width:96px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--line-2);display:none"><button class="btn" id="wallPick">Escolher foto…</button><input type="file" id="wallFile" accept="image/*" hidden></div>
+        <div class="item"><div class="lbl">Escurecer o papel de parede<small>deixa os widgets legíveis sobre fotos claras</small></div><input type="range" min="0" max="80" step="5" id="wallDim" style="width:180px"><span class="mono dim" id="wallDimV" style="width:3em;text-align:right"></span></div>
+        <div class="item"><div class="lbl">Papel de parede animado<small>movimento lento; pesa em celulares antigos</small></div><label class="sw"><input type="checkbox" id="apMotion"><span></span></label></div>
+        <div class="item"><div class="lbl">Desfoque real nos cards<small>mais bonito, mais pesado: o papel de parede fica parado</small></div><label class="sw"><input type="checkbox" data-k="appearance.blur"><span></span></label></div>
+        <div class="item"><div class="lbl">Barra de status<small>hora, data, conexão e bateria no topo</small></div><label class="sw"><input type="checkbox" data-k="display.statusBar"><span></span></label></div>
+        <div class="item"><div class="lbl">Dock de páginas</div><select data-k="display.dock"><option value="auto">Some sozinho</option><option value="always">Sempre visível</option><option value="off">Desligado</option></select></div>
+        <div class="item"><div class="lbl">Estilo dos cards<small>"Vidro translúcido" é mais pesado em celulares antigos</small></div><div class="seg" id="apPreset"><button data-p="glass">iPad</button><button data-p="translucent">Vidro translúcido</button><button data-p="flat">Plano</button><button data-p="seamless">Sem borda</button></div></div>
         <div class="item"><div class="lbl">Cor de destaque</div><div class="swatches" id="apAccent"></div></div>
         <div class="item"><div class="lbl">Arredondamento<small>px</small></div><input type="number" min="0" max="40" data-k="appearance.radius"></div>
         <div class="item"><div class="lbl">Espaçamento<small>px</small></div><input type="number" min="0" max="30" data-k="appearance.gap"></div>
@@ -316,18 +448,6 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
         <div class="item"><div class="lbl">Ligado<small>tela escurece e só fica um relógio; toque acorda por 30 s</small></div><label class="sw"><input type="checkbox" data-k="night.enabled"><span></span></label></div>
         <div class="item"><div class="lbl">Das</div><input type="time" data-k="night.start"></div>
         <div class="item"><div class="lbl">Até</div><input type="time" data-k="night.end"></div>
-      </div>
-      <h2>IA</h2>
-      <div class="group">
-        <div class="item"><div class="lbl">Cotas do Claude<small>usa o token do Claude Code deste PC para ler o seu próprio uso em api.anthropic.com</small></div><label class="sw"><input type="checkbox" data-k="quotas.claude"><span></span></label></div>
-        <div class="item"><div class="lbl">Cotas do Codex<small>lidas dos logs locais do Codex, nada sai do PC</small></div><label class="sw"><input type="checkbox" data-k="quotas.codex"><span></span></label></div>
-        <div class="item"><div class="lbl">Prompts de permissão do Claude Code no celular<small>Permitir / Negar pelo painel; sem resposta, o terminal pergunta como sempre</small></div><label class="sw"><input type="checkbox" data-k="claudeHook.enabled"><span></span></label></div>
-        <div class="item"><div class="lbl">Hook em <code>~/.claude/settings.json</code><small id="hookState">verificando…</small></div><button class="btn" id="hookBtn">Instalar hook</button></div>
-      </div>
-      <h2>GitHub</h2>
-      <div class="group">
-        <div class="item"><div class="lbl">Repositórios<small>um por linha, formato dono/nome</small></div><textarea id="ghRepos" rows="3" style="width:260px"></textarea></div>
-        <div class="item"><div class="lbl">Token<small>opcional: repositórios privados e limite maior</small></div><input type="password" data-k="github.token" autocomplete="off"></div>
       </div>
       <h2>Sistema</h2>
       <div class="group">
@@ -350,6 +470,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
 <div id="modal"><div class="box2" id="modalBox"></div></div>
 <div id="toast"></div>
 
+<script src="/panel/icons.js"></script>
 <script>
 (function () {
   'use strict';
@@ -398,6 +519,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       return api('/api/settings').then(function (s) {
         saved = s.data; draft = clone(saved);
         renderAll(); changed(); toast('Salvo. O celular atualiza em instantes.');
+        if ($('#v-integrations').classList.contains('on')) setTimeout(loadIntegrations, 1500);
       });
     });
   }
@@ -408,7 +530,8 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     b.addEventListener('click', function () {
       $$('.nav').forEach(function (x) { x.classList.toggle('on', x === b); });
       $$('.view').forEach(function (v) { v.classList.toggle('on', v.id === 'v-' + b.dataset.v); });
-      if (b.dataset.v === 'phone') loadPhones();
+      if (b.dataset.v === 'phone') { loadPhones(); loadLan(); }
+      if (b.dataset.v === 'integrations') loadIntegrations();
       if (b.dataset.v === 'webhooks') loadWebhooks();
       if (b.dataset.v === 'advanced') $('#raw').value = JSON.stringify(draft, null, 2);
     });
@@ -435,7 +558,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       var b = document.createElement('button');
       b.className = 'pg' + (i === pageIdx ? ' on' : '') + (p.enabled === false ? ' off' : '');
       b.draggable = true;
-      b.innerHTML = '<span class="e">' + esc(p.icon || '▢') + '</span><span class="t">' + esc(p.title || p.id) + '</span><span class="n">' + (p.widgets || []).length + '</span>';
+      b.innerHTML = '<span class="e">' + KBIcons.html(p.icon || 'grid') + '</span><span class="t">' + esc(p.title || p.id) + '</span><span class="n">' + (p.widgets || []).length + '</span>';
       b.addEventListener('click', function () { pageIdx = i; selId = null; cardIdx = null; renderAll(); pushPreview(); });
       b.addEventListener('dragstart', function () { dragPage = i; });
       b.addEventListener('dragover', function (e) { e.preventDefault(); b.classList.add('drop'); });
@@ -451,12 +574,16 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     });
     var p = page();
     $('#pTitle').value = p ? p.title || '' : '';
-    $('#pIcon').value = p ? p.icon || '' : '';
+    $('#pIcon').innerHTML = KBIcons.html(p ? p.icon || 'grid' : 'grid');
     $('#pEnabled').checked = p ? p.enabled !== false : false;
     $('#pInfo').textContent = p ? 'id: ' + p.id + ' · ' + (p.widgets || []).length + ' widgets' : 'sem páginas';
   }
   $('#pTitle').addEventListener('input', function () { if (page()) { page().title = this.value; renderPages(); changed(); } });
-  $('#pIcon').addEventListener('input', function () { if (page()) { page().icon = this.value; renderPages(); changed(); } });
+  $('#pIcon').addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (!page()) return;
+    pickIcon(this, page().icon, function (v) { page().icon = v; renderPages(); changed(); });
+  });
   $('#pEnabled').addEventListener('change', function () { if (page()) { page().enabled = this.checked; renderPages(); changed(); } });
   $('#pUp').addEventListener('click', function () { movePage(-1); });
   $('#pDown').addEventListener('click', function () { movePage(1); });
@@ -508,7 +635,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
   $('#addPage').addEventListener('click', function () {
     var box = $('#modalBox');
     box.innerHTML = '<h1>Nova página</h1><p class="lead">Comece de um template ou do zero. Dá para mudar tudo depois.</p><div class="tpl"><button class="tp" data-t=""><div class="e">＋</div><b>Em branco</b><small>Uma grade vazia</small>' + miniLayout([]) + '</button>' +
-      templates.map(function (t) { return '<button class="tp" data-t="' + esc(t.id) + '"><div class="e">' + esc(t.icon) + '</div><b>' + esc(t.title) + '</b><small>' + esc(t.desc) + '</small>' + miniLayout(t.widgets) + '</button>'; }).join('') + '</div>';
+      templates.map(function (t) { return '<button class="tp" data-t="' + esc(t.id) + '"><div class="e">' + KBIcons.html(t.icon) + '</div><b>' + esc(t.title) + '</b><small>' + esc(t.desc) + '</small>' + miniLayout(t.widgets) + '</button>'; }).join('') + '</div>';
     $('#modal').classList.add('show');
     $$('.tp', box).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -558,6 +685,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     return d ? d.category.toLowerCase() : '';
   }
   function renderCanvas() {
+    if (!draft) return; // the resize observer fires once before the settings arrive
     $$('.box', canvas).forEach(function (b) { b.remove(); });
     var p = page(); if (!p) return;
     (p.widgets || []).forEach(function (w) {
@@ -565,7 +693,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       var el = document.createElement('div');
       el.className = 'box' + (w.id === selId ? ' sel' : '');
       el.dataset.id = w.id;
-      el.innerHTML = '<div class="bi">' + esc(d.icon) + '</div><div class="bn">' + esc(d.name) + '</div><div class="bs">' + w.w + '×' + w.h + ' · ' + esc(summary(w)) + '</div><div class="rz"></div>';
+      el.innerHTML = '<div class="bi">' + KBIcons.html(d.icon) + '</div><div class="bn">' + esc(d.name) + '</div><div class="bs">' + w.w + '×' + w.h + ' · ' + esc(summary(w)) + '</div><div class="rz"></div>';
       boxStyle(el, w);
       canvas.appendChild(el);
     });
@@ -650,7 +778,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     });
     $('#palette').innerHTML = Object.keys(cats).map(function (c) {
       return '<div class="cat">' + esc(c) + '</div>' + cats[c].map(function (d) {
-        return '<button class="pw" data-t="' + esc(d.type) + '" title="' + esc(d.desc) + '"><span class="e">' + esc(d.icon) + '</span><span><b>' + esc(d.name) + '</b><small>' + esc(d.desc) + '</small></span></button>';
+        return '<button class="pw" data-t="' + esc(d.type) + '" title="' + esc(d.desc) + '"><span class="e">' + KBIcons.html(d.icon) + '</span><span><b>' + esc(d.name) + '</b><small>' + esc(d.desc) + '</small></span></button>';
       }).join('');
     }).join('') || '<div class="faint" style="padding:10px">Nada encontrado.</div>';
     $('#wcount').textContent = catalog.length;
@@ -724,7 +852,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     // editing a card inside a Smart Stack
     if (w.type === 'stack' && cardIdx != null && w.options && w.options.cards && w.options.cards[cardIdx]) {
       var card = w.options.cards[cardIdx], cd = byType[card.type] || { name: card.type, options: [] };
-      $('#inspTitle').textContent = cd.icon + ' ' + cd.name + ' (no stack)';
+      $('#inspTitle').innerHTML = KBIcons.html(cd.icon) + ' ' + esc(cd.name) + ' (no stack)';
       var back = document.createElement('button'); back.className = 'btn sm'; back.textContent = '← Voltar ao Smart Stack';
       back.addEventListener('click', function () { cardIdx = null; renderInspector(); });
       box.appendChild(back);
@@ -737,7 +865,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       box.appendChild(en);
       return;
     }
-    $('#inspTitle').textContent = d.icon + ' ' + d.name;
+    $('#inspTitle').innerHTML = KBIcons.html(d.icon) + ' ' + esc(d.name);
     var desc = document.createElement('div'); desc.className = 'desc'; desc.textContent = d.desc || ''; box.appendChild(desc);
     var geo = document.createElement('div'); geo.className = 'geo';
     ['x', 'y', 'w', 'h'].forEach(function (k) {
@@ -763,7 +891,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       (wopts.cards || []).forEach(function (c, i) {
         var cdd = byType[c.type] || { icon: '?', name: c.type };
         var r = document.createElement('div'); r.className = 'cd';
-        r.innerHTML = '<span>' + esc(cdd.icon) + ' ' + esc(cdd.name) + (c.enabled === false ? ' <i class="faint">(off)</i>' : '') + '</span><button class="btn sm" data-a="up">↑</button><button class="btn sm" data-a="edit">⚙</button><button class="btn sm danger" data-a="del">✕</button>';
+        r.innerHTML = '<span>' + KBIcons.html(cdd.icon) + ' ' + esc(cdd.name) + (c.enabled === false ? ' <i class="faint">(off)</i>' : '') + '</span><button class="btn sm" data-a="up">↑</button><button class="btn sm" data-a="edit">⚙</button><button class="btn sm danger" data-a="del">✕</button>';
         r.addEventListener('click', function (e) {
           var a = e.target.closest('[data-a]'); if (!a) return;
           if (a.dataset.a === 'edit') { cardIdx = i; renderInspector(); return; }
@@ -820,11 +948,11 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       var kind = scKind(s);
       var el = document.createElement('div'); el.className = 'sc';
       var val = kind === 'macro' ? JSON.stringify(s.macro, null, 1) : (s[kind] || '');
-      el.innerHTML = '<div class="face" style="background:' + esc(s.color || '#3a3a3c') + '">' + esc(s.icon || '▢') + '</div>' +
+      el.innerHTML = '<div class="face" style="background:' + esc(s.color || '#3a3a3c') + '">' + KBIcons.html(s.icon || 'grid') + '</div>' +
         '<div class="fields">' +
         '<div><label>Nome</label><input type="text" data-f="label" value="' + esc(s.label) + '"></div>' +
         '<div><label>Id</label><input type="text" class="mono" data-f="id" value="' + esc(s.id) + '"></div>' +
-        '<div><label>Ícone</label><input type="text" data-f="icon" maxlength="4" value="' + esc(s.icon) + '"></div>' +
+        '<div><label>Ícone</label><button class="iconbtn" data-pick="' + i + '" title="Escolher ícone">' + KBIcons.html(s.icon || 'grid') + '</button></div>' +
         '<div><label>Cor</label><input type="color" data-f="color" value="' + esc(/^#[0-9a-f]{6}$/i.test(s.color || '') ? s.color : '#3a3a3c') + '"></div>' +
         '<div><label>Tipo</label><select data-f="kind">' + [['cmd', 'Programa / URL'], ['keys', 'Combinação de teclas'], ['text', 'Digitar texto'], ['macro', 'Macro (JSON)']].map(function (k) { return '<option value="' + k[0] + '"' + (k[0] === kind ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('') + '</select></div>' +
         '<div><label>Estado on/off (chave de push)</label><input type="text" class="mono" data-f="toggle" value="' + esc(s.toggle || '') + '" placeholder="opcional"></div>' +
@@ -834,6 +962,8 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       el.addEventListener('input', function (e) { updateShortcut(i, e.target, el); });
       el.addEventListener('change', function (e) { if (e.target.dataset.f === 'kind') { updateShortcut(i, e.target, el); renderShortcuts(); } });
       el.addEventListener('click', function (e) {
+        var pk = e.target.closest('[data-pick]');
+        if (pk) { e.stopPropagation(); pickIcon(pk, s.icon, function (v) { s.icon = v; pk.innerHTML = KBIcons.html(v); el.querySelector('.face').innerHTML = KBIcons.html(v); changed(); }); return; }
         var a = e.target.closest('[data-a]'); if (!a) return;
         if (a.dataset.a === 'test') api('/api/shortcuts/test', { method: 'POST', body: s }).then(function (r) { toast(r.ok ? (r.data.msg || 'ok') : (r.data && r.data.error) || 'falhou', !r.ok); });
         if (a.dataset.a === 'del') { draft.shortcuts.splice(i, 1); renderShortcuts(); changed(); }
@@ -854,7 +984,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       else s[k] = input.value;
     } else if (f === 'toggle') { if (input.value) s.toggle = input.value; else delete s.toggle; }
     else s[f] = input.value;
-    var face = el.querySelector('.face'); face.style.background = s.color || '#3a3a3c'; face.textContent = s.icon || '▢';
+    var face = el.querySelector('.face'); face.style.background = s.color || '#3a3a3c'; face.innerHTML = KBIcons.html(s.icon || 'grid');
     changed();
   }
   $('#scAdd').addEventListener('click', function () {
@@ -948,6 +1078,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
   });
   $('#whNotify').addEventListener('click', function () { api('/api/notify', { method: 'POST', body: { title: 'Olá do KONGBOX', text: 'Notificação de teste', level: 'ok' } }).then(function (r) { toast(r.ok ? 'Enviada.' : 'Falhou.', !r.ok); }); });
   $('#whPush').addEventListener('click', function () { api('/api/push/build', { method: 'POST', body: { value: 'passed', sub: 'teste pelo editor' } }).then(function () { toast('Enviado.'); loadWebhooks(); }); });
+  $('#whClear').addEventListener('click', function () { api('/api/notify', { method: 'DELETE' }).then(function (r) { toast(r.ok ? 'Notificações apagadas.' : 'Falhou.', !r.ok); }); });
   $('#whReload').addEventListener('click', function () { api('/api/refresh?reload=1', { method: 'POST' }).then(function () { toast('Painel recarregando.'); }); });
 
   // ---------- phone ----------
@@ -983,14 +1114,22 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       else el.value = v == null ? '' : v;
     });
     // defaults that are "on" unless set to false
-    ['display.showSeconds', 'display.hour24', 'display.vibrate', 'display.volumeKeys', 'quotas.claude', 'quotas.codex'].forEach(function (k) {
+    ['display.showSeconds', 'display.hour24', 'display.vibrate', 'display.volumeKeys', 'display.statusBar', 'quotas.claude', 'quotas.codex', 'notifications.windows'].forEach(function (k) {
       var el = $('[data-k="' + k + '"]'); if (el) el.checked = get(k) !== false;
     });
     var w = draft.weather || {};
     $('#geoNow').textContent = (w.city || '—') + ' · ' + (w.lat != null ? (+w.lat).toFixed(2) + ', ' + (+w.lon).toFixed(2) : '');
     $$('#apPreset button').forEach(function (b) { b.classList.toggle('on', ((draft.appearance || {}).preset || 'glass') === b.dataset.p); });
+    $$('#apWall button').forEach(function (b) { b.classList.toggle('on', ((draft.appearance || {}).wallpaper || 'aurora') === b.dataset.w); });
+    var ap = draft.appearance || {};
+    $('#wallDim').value = ap.wallDim != null ? ap.wallDim : 30;
+    $('#wallDimV').textContent = $('#wallDim').value + '%';
+    if (ap.wallpaperV) { $('#wallThumb').src = '/api/wallpaper?v=' + ap.wallpaperV; $('#wallThumb').style.display = ''; }
+    if (!get('display.dock')) $('[data-k="display.dock"]').value = 'auto';
+    $('#apMotion').checked = (draft.appearance || {}).motion === 'live';
     $('#apAccent').innerHTML = ACCENTS.map(function (c) { return '<button style="background:' + c + '" data-c="' + c + '" class="' + (((draft.appearance || {}).accent || '#0a84ff').toLowerCase() === c ? 'on' : '') + '" title="' + c + '"></button>'; }).join('');
     $('#ghRepos').value = ((draft.github || {}).repos || []).join('\n');
+    $('#notifIgnore').value = ((draft.notifications || {}).ignore || []).join('\n');
   }
   $$('[data-k]').forEach(function (el) {
     el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', function () {
@@ -998,6 +1137,30 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       set(el.dataset.k, v); changed();
     });
   });
+  $('#apMotion').addEventListener('change', function () { set('appearance.motion', this.checked ? 'live' : 'still'); changed(); });
+  $('#apWall').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-w]'); if (!b) return;
+    if (b.dataset.w === 'custom' && !(draft.appearance || {}).wallpaperV) { $('#wallFile').click(); return; }
+    set('appearance.wallpaper', b.dataset.w); renderGeneral(); changed();
+  });
+  $('#wallPick').addEventListener('click', function () { $('#wallFile').click(); });
+  $('#wallFile').addEventListener('change', function () {
+    var f = this.files[0]; this.value = '';
+    if (!f) return;
+    $('#wallInfo').textContent = 'Enviando ' + f.name + '…';
+    fetch('/api/wallpaper', { method: 'POST', headers: { 'X-Kong': '1', 'Content-Type': f.type || 'application/octet-stream' }, body: f })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) { toast(d.error || 'Imagem inválida.', true); $('#wallInfo').textContent = d.error || 'Falhou.'; return; }
+        set('appearance.wallpaper', 'custom');
+        set('appearance.wallpaperV', d.v);
+        $('#wallInfo').textContent = d.width + ' × ' + d.height + ' · ' + Math.round(d.bytes / 1024) + ' KB';
+        renderGeneral(); changed();
+        toast('Foto pronta. Salve para aplicar no celular.');
+      })
+      .catch(function () { toast('Não consegui enviar a imagem.', true); });
+  });
+  $('#wallDim').addEventListener('input', function () { set('appearance.wallDim', +this.value); $('#wallDimV').textContent = this.value + '%'; changed(); });
   $('#apPreset').addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (!b) return; set('appearance.preset', b.dataset.p); renderGeneral(); changed(); });
   $('#apAccent').addEventListener('click', function (e) { var b = e.target.closest('[data-c]'); if (!b) return; set('appearance.accent', b.dataset.c); renderGeneral(); changed(); });
   $('#ghRepos').addEventListener('input', function () { set('github.repos', this.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean)); changed(); });
@@ -1041,6 +1204,176 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     catch (e) { $('#rawMsg').textContent = 'JSON inválido: ' + e.message; }
   });
 
+  // ---------- icon picker ----------
+  var picker = document.createElement('div');
+  picker.id = 'picker';
+  document.body.appendChild(picker);
+  function pickIcon(anchor, current, done) {
+    picker.innerHTML = '<div class="ig">' + KBIcons.names.map(function (n) {
+      return '<button title="' + n + '" data-n="' + n + '" class="' + (n === current ? 'on' : '') + '">' + KBIcons.html(n) + '</button>';
+    }).join('') + '</div><input type="text" placeholder="ou digite um emoji / texto" maxlength="4">';
+    var r = anchor.getBoundingClientRect();
+    picker.style.left = Math.min(innerWidth - 350, Math.max(8, r.left)) + 'px';
+    picker.style.top = Math.min(innerHeight - 370, r.bottom + 6) + 'px';
+    picker.classList.add('show');
+    picker.onclick = function (e) {
+      e.stopPropagation();
+      var b = e.target.closest('[data-n]'); if (!b) return;
+      done(b.dataset.n); picker.classList.remove('show');
+    };
+    var input = picker.querySelector('input');
+    input.onkeydown = function (e) { if (e.key === 'Enter' && input.value.trim()) { done(input.value.trim()); picker.classList.remove('show'); } };
+  }
+  document.addEventListener('click', function (e) { if (!picker.contains(e.target)) picker.classList.remove('show'); });
+
+  // ---------- Wi-Fi ----------
+  var pairPoll = 0, knownPhones = null;
+  function loadLan() {
+    api('/api/lan').then(function (r) {
+      var l = r.data || {};
+      $('#lanOn').checked = !!(draft.lan && draft.lan.enabled);
+      $('#lanIps').textContent = l.enabled ? (l.ips || []).map(function (i) { return i + ':' + l.port; }).join('  ·  ') || 'sem rede' : 'Wi-Fi desligado';
+      $('#pairBtn').disabled = !l.enabled;
+      var phones = l.phones || [];
+      if (knownPhones != null && phones.length > knownPhones) { toast('Celular pareado: ' + phones[phones.length - 1].name); $('#pairBox').hidden = true; clearInterval(pairPoll); }
+      knownPhones = phones.length;
+      $('#lanPhones').innerHTML = phones.length ? phones.map(function (p) {
+        return '<div class="item"><div class="lbl"><b>' + esc(p.name) + '</b><small>visto ' + new Date(p.lastSeen).toLocaleString('pt-BR') + '</small></div><button class="btn sm danger" data-rm="' + esc(p.id) + '">Remover</button></div>';
+      }).join('') : '<div class="item dim">Nenhum celular pareado.</div>';
+      if (l.pairing && !$('#pairBox').hidden) renderPair(l);
+    });
+  }
+  function renderPair(l) {
+    var p = l.pairing; if (!p) return;
+    var left = Math.max(0, Math.round((p.expires - Date.now()) / 1000));
+    $('#pairBox').innerHTML = '<div class="pair"><div class="qr">' + p.qr + '</div><div>' +
+      '<div class="dim" style="font-size:13px">Escaneie com a câmera do celular, ou abra o app e digite:</div>' +
+      '<div class="code">' + esc(p.code.slice(0, 3) + ' ' + p.code.slice(3)) + '</div>' +
+      '<dl><dt>Endereço</dt><dd>' + esc((l.ips || [])[0] || '—') + '</dd><dt>Verificação</dt><dd class="check">' + esc(l.check) + '</dd><dt>Expira</dt><dd>' + Math.floor(left / 60) + ':' + ('0' + left % 60).slice(-2) + '</dd></dl>' +
+      '<div class="row" style="margin-top:14px"><button class="btn" id="pairCancel">Cancelar</button></div></div></div>';
+    $('#pairCancel').onclick = function () { api('/api/pair/cancel', { method: 'POST' }); $('#pairBox').hidden = true; clearInterval(pairPoll); };
+  }
+  $('#pairBtn').addEventListener('click', function () {
+    api('/api/pair/start', { method: 'POST' }).then(function (r) {
+      if (!r.ok) { toast((r.data && r.data.error) || 'Falhou.', true); return; }
+      $('#pairBox').hidden = false;
+      loadLan();
+      clearInterval(pairPoll);
+      pairPoll = setInterval(loadLan, 2000);
+    });
+  });
+  $('#lanOn').addEventListener('change', function () {
+    var on = this.checked;
+    set('lan.enabled', on);
+    // saving the setting and restarting is one step: the HTTPS port only opens at startup
+    api('/api/settings', { method: 'PUT', body: draft }).then(function (r) {
+      if (!r.ok) { toast((r.data && r.data.error) || 'Falhou ao salvar.', true); return; }
+      saved = clone(draft); changed();
+      toast(on ? 'Ligando o Wi-Fi… o Windows pode pedir permissão no firewall.' : 'Desligando o Wi-Fi…');
+      api('/api/restart', { method: 'POST' }).then(function () {
+        var tries = 0, t = setInterval(function () {
+          api('/api/info').then(function (x) { if (x.ok || ++tries > 30) { clearInterval(t); loadLan(); } });
+        }, 700);
+      });
+    });
+  });
+  $('#lanPhones').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rm]'); if (!b) return;
+    if (!confirm('Remover este celular? Ele vai precisar parear de novo.')) return;
+    api('/api/lan/phones/' + encodeURIComponent(b.dataset.rm), { method: 'DELETE' }).then(loadLan);
+  });
+
+  // ---------- integrations ----------
+  function chip(card, state, text) {
+    var c = card.querySelector('[data-st]');
+    c.className = 'chip ' + (state === 'ok' ? 'ok' : state === 'warn' ? 'warn' : state === 'err' ? 'err' : '');
+    c.textContent = text;
+    card.classList.toggle('ok', state === 'ok');
+  }
+  function qbars(wins) {
+    return (wins || []).map(function (w) {
+      var c = w.pct >= 90 ? 'var(--red)' : w.pct >= 70 ? 'var(--amber)' : 'var(--green)';
+      return '<div class="qbar"><span>' + esc(w.label) + '</span><span class="t"><i style="width:' + Math.min(100, w.pct) + '%;background:' + c + '"></i></span><b class="mono">' + Math.round(w.pct) + '%</b></div>';
+    }).join('');
+  }
+  function loadIntegrations() {
+    api('/api/integrations').then(function (r) {
+      var d = r.data || {};
+      var c = d.claude || {}, cc = $('#igClaude');
+      if (!c.enabled) chip(cc, '', 'desligado');
+      else if (!c.cli && !c.loggedIn) chip(cc, 'err', 'Claude Code não instalado');
+      else if (!c.loggedIn) chip(cc, 'warn', 'falta fazer login');
+      else if (c.error) chip(cc, 'warn', 'atenção');
+      else chip(cc, 'ok', '● conectado' + (c.plan ? ' · ' + c.plan : ''));
+      cc.querySelector('[data-body]').innerHTML = (c.error ? '<div style="color:var(--amber)">' + esc(c.error) + '</div>' : '') + qbars(c.windows) +
+        (c.sessions ? '<div class="dim ig-more">' + c.sessions + ' sessão(ões) do Claude Code nas últimas 24 h</div>' : '');
+
+      var x = d.codex || {}, cx = $('#igCodex');
+      if (!x.enabled) chip(cx, '', 'desligado');
+      else if (!x.cli && !x.folder) chip(cx, 'err', 'Codex não instalado');
+      else if (!(x.windows || []).length) chip(cx, 'warn', 'sem sessão recente');
+      else chip(cx, 'ok', '● conectado');
+      cx.querySelector('[data-body]').innerHTML = qbars(x.windows) || (x.error ? '<div class="dim">' + esc(x.error) + '</div>' : '');
+
+      var nt = d.notifications || {}, cn = $('#igNotif');
+      if (!nt.enabled) chip(cn, '', 'desligado');
+      else if (!nt.available) chip(cn, 'err', 'Central de Notificações não encontrada');
+      else if (nt.error) chip(cn, 'warn', 'atenção');
+      else chip(cn, 'ok', '● espelhando');
+      cn.querySelector('[data-body]').innerHTML = nt.error ? '<div style="color:var(--amber)">' + esc(nt.error) + '</div>' : '';
+
+      var h = d.hook || {}, ch = $('#igHook');
+      chip(ch, h.enabled && h.installed ? 'ok' : h.installed || h.enabled ? 'warn' : '', h.enabled && h.installed ? '● ativo' : h.installed ? 'hook instalado, interruptor desligado' : h.enabled ? 'falta instalar o hook' : 'desligado');
+
+      var g = d.github || {}, cg = $('#igGitHub');
+      if (!g.repos) chip(cg, '', 'nenhum repositório');
+      else if (g.error) chip(cg, 'warn', 'atenção');
+      else chip(cg, 'ok', '● ' + g.repos + ' repositório(s)' + (g.me ? ' · @' + g.me : ''));
+      cg.querySelector('[data-body]').innerHTML = g.error ? '<div style="color:var(--amber)">' + esc(g.error) + '</div>' : '';
+    });
+  }
+  // a connected card folds its steps away; clicking the header shows them again
+  $$('.ig-card .ig-h').forEach(function (h) {
+    h.addEventListener('click', function (e) { if (!e.target.closest('label, button, input')) h.parentNode.classList.toggle('open'); });
+  });
+  $$('code.copy').forEach(function (c) {
+    c.title = 'clique para copiar';
+    c.addEventListener('click', function () { navigator.clipboard.writeText(c.textContent).then(function () { toast('Copiado: ' + c.textContent); }); });
+  });
+  $('#notifIgnore').addEventListener('input', function () { set('notifications.ignore', this.value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean)); changed(); });
+  $('#ghNewToken').addEventListener('click', function () {
+    window.open('https://github.com/settings/personal-access-tokens/new', '_blank', 'noopener');
+  });
+  function renderRepoList(list) {
+    var chosen = ((draft.github || {}).repos || []);
+    $('#ghList').innerHTML = list.map(function (r) {
+      return '<label><input type="checkbox" value="' + esc(r.name) + '"' + (chosen.indexOf(r.name) >= 0 ? ' checked' : '') + '>' + esc(r.name) + (r['private'] ? ' <small>privado</small>' : '') + '</label>';
+    }).join('') || '<span class="dim">Nenhum repositório visível para este token.</span>';
+  }
+  $('#ghLoad').addEventListener('click', function () {
+    var btn = this; btn.disabled = true; btn.textContent = 'Carregando…';
+    api('/api/github/repos', { method: 'POST', body: { token: $('#ghToken').value } }).then(function (r) {
+      btn.disabled = false; btn.textContent = 'Carregar meus repositórios';
+      if (!r.ok) { toast((r.data && r.data.error) || 'Falhou.', true); return; }
+      renderRepoList(r.data);
+    });
+  });
+  $('#ghClones').addEventListener('click', function () {
+    api('/api/github/clones').then(function (r) {
+      var list = (r.data || []).map(function (c) { return { name: c.repo, path: c.path }; });
+      if (!list.length) { toast('Nenhum clone do GitHub encontrado nas pastas de projetos.', true); return; }
+      renderRepoList(list);
+      toast(list.length + ' repositório(s) clonado(s) neste PC: com eles o painel mostra alterações, pull e push.');
+    });
+  });
+  $('#ghList').addEventListener('change', function () {
+    var picked = $$('#ghList input:checked').map(function (i) { return i.value; });
+    if (picked.length > 8) { toast('Até 8 repositórios.', true); picked = picked.slice(0, 8); }
+    set('github.repos', picked);
+    $('#ghRepos').value = picked.join('\n');
+    changed();
+  });
+
   // ---------- status footer ----------
   function foot() {
     api('/api/state').then(function (r) {
@@ -1053,6 +1386,8 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
     pageIdx = Math.max(0, Math.min(pageIdx, pages().length - 1));
     renderPages(); renderCanvas(); renderInspector(); renderPalette(); renderShortcuts(); renderRules(); renderGeneral();
   }
+
+  $$('[data-icon]').forEach(function (i) { i.innerHTML = KBIcons.html(i.dataset.icon); });
 
   Promise.all([api('/api/settings'), api('/api/catalog')]).then(function (r) {
     if (!r[0].ok) { document.body.innerHTML = '<p style="padding:40px;font-family:var(--mono)">agente offline_</p>'; return; }

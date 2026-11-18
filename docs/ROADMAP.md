@@ -22,7 +22,7 @@ A fase 1 entregou o núcleo de ponta a ponta. Próximas fases:
 - CodexBar e cotas nativas do Antigravity
 
 ## Fase 4: conexão e distribuição
-- Wi-Fi com HTTPS na 8766, certificado fixado e pareamento por QR + código de verificação; Tailscale
+- Tailscale (o Wi-Fi com HTTPS, pin de certificado e pareamento por QR já existe)
 - Vários celulares e vários PCs (widget "Computadores")
 - Atualização do agente via GitHub Releases com SHA-256; atualização do app por adb
 - Instaladores (setup.ps1, winget, Scoop), início com o sistema já existe

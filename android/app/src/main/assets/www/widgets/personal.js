@@ -64,7 +64,7 @@
         var it = items[+r.dataset.i];
         st.done[it] = !st.done[it];
         KB.store.set(key, st); draw();
-        if (items.every(function (x) { return st.done[x]; })) KB.toast({ title: 'Checklist zerado', text: 'Tudo feito hoje. ✓', level: 'ok' });
+        if (items.every(function (x) { return st.done[x]; })) KB.toast({ title: 'Checklist zerado', text: 'Tudo feito hoje.', level: 'ok' });
       });
       draw();
       return { secondly: function () { if (daily && st.day !== today()) draw(); } };
@@ -141,7 +141,7 @@
   KB.def('label', {
     mount: function (el, w) {
       el.classList.add('bare');
-      el.innerHTML = '<div class="lb"><span class="ar">❯</span> ' + esc(KB.opt(w, 'text', '')) + '<i class="cur"></i></div>';
+      el.innerHTML = '<div class="lb"><span class="ar">' + KBIcons.html('chevron-right') + '</span>' + esc(KB.opt(w, 'text', '')) + '<i class="cur"></i></div>';
       return {};
     },
   });
@@ -160,7 +160,7 @@
         var c = b.level <= 15 ? 'var(--red)' : b.level <= 30 ? 'var(--amber)' : 'var(--green)';
         fill.style.width = b.level + '%'; fill.style.background = c;
         v.textContent = b.level + '%';
-        s.textContent = (b.charging ? '⚡ carregando' : 'na bateria') + (b.temp ? ' · ' + b.temp.toFixed(1) + '°' : '');
+        s.innerHTML = (b.charging ? KBIcons.html('bolt') + ' carregando' : 'na bateria') + (b.temp ? ' · ' + b.temp.toFixed(1) + '°' : '');
       }
       read();
       var t = setInterval(read, 30000);

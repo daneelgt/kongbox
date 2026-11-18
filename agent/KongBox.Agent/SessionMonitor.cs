@@ -11,7 +11,7 @@ sealed class SessionMonitor : IDisposable
 {
     sealed class Sess
     {
-        public string Id = "", Tool = "", File = "", Project = "", Model = "", Branch = "", LastKind = "";
+        public string Id = "", Tool = "", File = "", Project = "", Model = "", Branch = "", LastKind = "", Cwd = "";
         public long Offset;
         public DateTimeOffset Start, Last;
         public long Input, Output, CacheRead, CacheWrite;
@@ -122,7 +122,7 @@ sealed class SessionMonitor : IDisposable
         var type = n.Str("type");
         if (type is not ("user" or "assistant")) return;
         Touch(s, Time(n));
-        if (n.Str("cwd") is { Length: > 0 } cwd) s.Project = Path.GetFileName(cwd.TrimEnd('\\', '/'));
+        if (n.Str("cwd") is { Length: > 0 } cwd) { s.Project = Path.GetFileName(cwd.TrimEnd('\\', '/')); s.Cwd = cwd; }
         if (n.Str("gitBranch") is { Length: > 0 } br) s.Branch = br;
         var msg = n?["message"];
         if (type == "assistant")
@@ -160,7 +160,7 @@ sealed class SessionMonitor : IDisposable
         switch (type)
         {
             case "session_meta":
-                if (p.Str("cwd") is { Length: > 0 } cwd) s.Project = Path.GetFileName(cwd.TrimEnd('\\', '/'));
+                if (p.Str("cwd") is { Length: > 0 } cwd) { s.Project = Path.GetFileName(cwd.TrimEnd('\\', '/')); s.Cwd = cwd; }
                 if (p.Str("id") is { Length: > 0 } id) s.Id = id;
                 break;
             case "turn_context":
@@ -215,6 +215,7 @@ sealed class SessionMonitor : IDisposable
                 ["tool"] = s.Tool,
                 ["project"] = s.Project,
                 ["branch"] = s.Branch,
+                ["canOpen"] = s.Cwd != "" && Directory.Exists(s.Cwd),
                 ["model"] = s.Model,
                 ["state"] = State(s),
                 ["start"] = s.Start.ToUnixTimeMilliseconds(),
@@ -224,6 +225,26 @@ sealed class SessionMonitor : IDisposable
                 ["tokens"] = new JsonObject { ["in"] = s.Input, ["out"] = s.Output, ["cacheRead"] = s.CacheRead, ["cacheWrite"] = s.CacheWrite },
             }).ToArray());
         }
+    }
+
+    /// <summary>Folders that hold your projects: the parents of every session's working directory.</summary>
+    public IEnumerable<string> Roots()
+    {
+        lock (gate)
+            return sessions.Values.Where(s => s.Cwd != "").Select(s => Path.GetDirectoryName(s.Cwd.TrimEnd('\\', '/')) ?? "")
+                .Where(d => d != "").Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>Opens a session's project folder in VS Code (the phone only sends the session id).</summary>
+    public (bool ok, string msg) OpenInEditor(string id)
+    {
+        string? cwd;
+        lock (gate) cwd = sessions.Values.FirstOrDefault(s => s.Id == id)?.Cwd;
+        if (string.IsNullOrEmpty(cwd) || !Directory.Exists(cwd)) return (false, "Pasta da sessão não encontrada.");
+        // "code" is a .cmd on Windows: start it through cmd, hidden, with the folder quoted
+        var psi = new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/c code \"{cwd}\"") { UseShellExecute = false, CreateNoWindow = true };
+        System.Diagnostics.Process.Start(psi)?.Dispose();
+        return (true, "Abrindo " + Path.GetFileName(cwd) + " no VS Code.");
     }
 
     public void Dispose() => cts.Cancel();

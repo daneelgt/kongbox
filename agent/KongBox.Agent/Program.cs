@@ -10,6 +10,12 @@ if (args.Contains("--claude-hook")) return await ClaudeHook.RunHookProcess();
 const int Port = 8765;
 const string Url = "http://127.0.0.1:8765/";
 
+// "--restart-wait <pid>": started by /api/restart; wait for the old agent to let go of the single-instance lock
+var waitIdx = Array.IndexOf(args, "--restart-wait");
+if (waitIdx >= 0 && waitIdx + 1 < args.Length && int.TryParse(args[waitIdx + 1], out var oldPid))
+{
+    try { using var old = Process.GetProcessById(oldPid); old.WaitForExit(15_000); } catch { /* already gone */ }
+}
 using var single = new Mutex(true, "Global\\KongBoxAgent", out var first);
 if (!first)
 {
@@ -28,14 +34,23 @@ var shortcuts = new Shortcuts(config, () => media);
 var rules = new RuleEngine(config, sys, procs, push, shortcuts);
 var sessions = new SessionMonitor();
 var quotas = new QuotaMonitor(config, sessions, http);
-var github = new GitHubMonitor(config, http);
+var github = new GitHubMonitor(config, http, new LocalGit(config, () => sessions.Roots()));
 var approvals = new ApprovalStore();
 var adb = new AdbReverse(config);
 var feeds = new FeedProxy(http);
+var lan = new Lan();
+var mirror = new NotificationMirror(config, push);
+var lanEnabled = config.Snapshot()["lan"].Bool("enabled");
 long reloadSeq = 0;
+var cts = new CancellationTokenSource();
 
 var builder = WebApplication.CreateSlimBuilder(args);
-builder.WebHost.UseUrls($"http://127.0.0.1:{Port}");
+builder.WebHost.ConfigureKestrel(k =>
+{
+    k.Listen(System.Net.IPAddress.Loopback, Port);
+    // Wi-Fi: HTTPS only, the phone pins this certificate's fingerprint
+    if (lanEnabled) k.ListenAnyIP(Lan.Port, l => l.UseHttps(lan.Certificate));
+});
 builder.Logging.ClearProviders();
 var app = builder.Build();
 
@@ -43,8 +58,45 @@ var app = builder.Build();
 static bool IsWebhook(string path) =>
     path.StartsWith("/api/push") || path == "/api/notify" || path.StartsWith("/api/goto/") || path == "/api/refresh";
 
+// ---- Wi-Fi port: only the panel's API, only for paired phones (cookie "kb" or Bearer token) ----
 app.Use(async (ctx, next) =>
 {
+    if (ctx.Connection.LocalPort != Lan.Port) { await next(); return; }
+    var path = ctx.Request.Path.Value ?? "";
+    var method = ctx.Request.Method;
+    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
+    ctx.Response.Headers["Strict-Transport-Security"] = "max-age=31536000";
+    if (path == "/panel") { ctx.Response.Redirect("/panel/"); return; }
+    if (path == "/api/hello" || (path == "/api/pair/claim" && HttpMethods.IsPost(method))) { await next(); return; }
+    // same-origin only for anything that changes state
+    var origin = ctx.Request.Headers.Origin.ToString();
+    if (!HttpMethods.IsGet(method) && origin != "" && origin != $"https://{ctx.Request.Host.Value}")
+    {
+        ctx.Response.StatusCode = 403;
+        return;
+    }
+    var auth = ctx.Request.Headers.Authorization.ToString();
+    var bearer = auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? auth[7..].Trim() : null;
+    // webhooks from other machines use the webhook key, never a phone token
+    if (IsWebhook(path))
+    {
+        var key = config.Snapshot().Str("webhookKey");
+        var given = bearer ?? ctx.Request.Query["token"].ToString();
+        if (key.Length >= 16 && given == key) { await next(); return; }
+        ctx.Response.StatusCode = 401;
+        return;
+    }
+    if (!Lan.PanelPath(path, method)) { ctx.Response.StatusCode = 404; return; }
+    if (path.StartsWith("/panel/")) { await next(); return; } // static files hold no secrets
+    if (!lan.Validate(ctx.Request.Cookies["kb"] ?? bearer)) { ctx.Response.StatusCode = 401; return; }
+    if (!HttpMethods.IsGet(method) && ctx.Request.Headers["X-Kong"] != "1") { ctx.Response.StatusCode = 403; return; }
+    await next();
+});
+
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Connection.LocalPort == Lan.Port) { await next(); return; }
     var host = ctx.Request.Host.Value ?? "";
     if (host is not ("127.0.0.1:8765" or "localhost:8765"))
     {
@@ -169,10 +221,29 @@ app.MapGet("/api/state", (HttpRequest r) =>
     return JsonResult(o);
 });
 
-app.MapGet("/api/art", () =>
+app.MapGet("/api/art", (HttpRequest r) =>
 {
     var (data, type) = media.Art();
-    return data is null ? Results.NotFound() : Results.Bytes(data, type);
+    if (data is null) return Results.NotFound();
+    // ?small=1: a 32 px copy the panel stretches as its blurred backdrop (cheap on old GPUs: no CSS blur filter)
+    if (r.Query["small"] == "1")
+    {
+        try
+        {
+            using var src = new System.Drawing.Bitmap(new MemoryStream(data));
+            using var dst = new System.Drawing.Bitmap(32, 32);
+            using (var g = System.Drawing.Graphics.FromImage(dst))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(src, 0, 0, 32, 32);
+            }
+            using var ms = new MemoryStream();
+            dst.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+            return Results.Bytes(ms.ToArray(), "image/png");
+        }
+        catch { /* unreadable artwork: fall back to the original */ }
+    }
+    return Results.Bytes(data, type);
 });
 
 app.MapGet("/api/proxy", async (HttpRequest r, CancellationToken ct) =>
@@ -279,6 +350,50 @@ app.MapPost("/api/notify", async (HttpRequest r) =>
     if (b is null) return Fail("Envie JSON { title, text, level }.");
     return JsonResult(push.Notify(b));
 });
+app.MapDelete("/api/notify", () => { push.ClearNotices(); return Ok("Notificações apagadas."); });
+app.MapDelete("/api/notify/{id:long}", (long id) => push.RemoveNotice(id) ? Ok() : Fail("Não existe.", 404));
+// opens the Windows app that sent a mirrored notification (the phone sends the notice id only)
+app.MapPost("/api/notify/{id:long}/open", (long id) =>
+{
+    var n = push.Notice(id);
+    if (n is null) return Fail("Notificação não encontrada.", 404);
+    return NotificationMirror.OpenApp(n.Str("aumid")) ? Ok("Abrindo " + n.Str("app", "o app") + " no PC.") : Fail("Essa notificação não veio de um app do Windows.");
+});
+// a web page on the PC's browser: https only (Hacker News stories, exchange and crypto sources)
+app.MapPost("/api/open", async (HttpRequest r) =>
+{
+    var url = (await BodyJson(r)).Str("url");
+    if (url.Length > 2000 || !Uri.TryCreate(url, UriKind.Absolute, out var u) || u.Scheme != "https") return Fail("Só endereços https.");
+    Process.Start(new ProcessStartInfo(u.AbsoluteUri) { UseShellExecute = true })?.Dispose();
+    return Ok("Aberto no PC.");
+});
+app.MapPost("/api/github/open", async (HttpRequest r) =>
+{
+    var b = await BodyJson(r);
+    var url = github.Url(b.Str("repo"), b?["pr"] is null ? null : (int)b.Num("pr"), b?["run"] is null ? null : (long)b.Num("run"));
+    if (url is null) return Fail("Repositório fora da sua lista.");
+    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose();
+    return Ok("Aberto no navegador do PC.");
+});
+app.MapPost("/api/github/act", async (HttpRequest r, CancellationToken ct) =>
+{
+    var b = await BodyJson(r);
+    var (ok, msg) = await github.Act(b.Str("action"), b.Str("repo"), b?["pr"] is null ? null : (int)b.Num("pr"), b?["run"] is null ? null : (long)b.Num("run"), ct);
+    return ok ? Ok(msg) : Fail(msg);
+});
+app.MapPost("/api/github/local", async (HttpRequest r) =>
+{
+    var b = await BodyJson(r);
+    var (ok, msg) = await Task.Run(() => github.LocalAct(b.Str("repo"), b.Str("action")));
+    return ok ? Ok(msg) : Fail(msg);
+});
+// repositories cloned on this PC (the editor offers them as one-tap picks)
+app.MapGet("/api/github/clones", () => JsonResult(new JsonArray(github.Local.Clones(force: true).Select(kv => (JsonNode)new JsonObject { ["repo"] = kv.Key, ["path"] = kv.Value }).ToArray())));
+app.MapPost("/api/sessions/open", async (HttpRequest r) =>
+{
+    var (ok, msg) = sessions.OpenInEditor((await BodyJson(r)).Str("id"));
+    return ok ? Ok(msg) : Fail(msg);
+});
 app.MapPost("/api/goto/{page}", (string page, HttpRequest r) =>
 {
     push.Goto(page, int.TryParse(r.Query["countdown"], out var c) ? c : 3);
@@ -310,6 +425,142 @@ app.MapDelete("/api/claude/hook", () =>
 {
     try { ClaudeHook.Uninstall(); return Ok("Hook removido."); }
     catch (Exception e) { return Fail(e.Message, 500); }
+});
+
+// ---- integrations: one place that says what is connected and what is missing ----
+static bool OnPath(string exe) =>
+    (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)
+        .Any(d => new[] { ".exe", ".cmd", ".bat", "" }.Any(ext => File.Exists(Path.Combine(d.Trim('"'), exe + ext))));
+app.MapGet("/api/integrations", () =>
+{
+    var cfg = config.Snapshot();
+    var home = AppPaths.Home;
+    var q = quotas.ToJson();
+    JsonNode? Q(string p) => q.FirstOrDefault(x => x.Str("provider") == p);
+    var claudeCred = Path.Combine(home, ".claude", ".credentials.json");
+    var sess = sessions.ToJson(50);
+    var gh = github.ToJson();
+    var cq = Q("claude");
+    var xq = Q("codex");
+    return JsonResult(new JsonObject
+    {
+        ["claude"] = new JsonObject
+        {
+            ["enabled"] = cfg["quotas"].Bool("claude", true),
+            ["cli"] = OnPath("claude"),
+            ["loggedIn"] = File.Exists(claudeCred),
+            ["sessions"] = sess.Count(s => s.Str("tool") == "claude"),
+            ["plan"] = cq.Str("plan"),
+            ["windows"] = cq?["windows"]?.DeepClone(),
+            ["error"] = cq.Str("error"),
+        },
+        ["codex"] = new JsonObject
+        {
+            ["enabled"] = cfg["quotas"].Bool("codex", true),
+            ["cli"] = OnPath("codex"),
+            ["folder"] = Directory.Exists(Path.Combine(home, ".codex")),
+            ["sessions"] = sess.Count(s => s.Str("tool") == "codex"),
+            ["windows"] = xq?["windows"]?.DeepClone(),
+            ["error"] = xq.Str("error"),
+        },
+        ["hook"] = new JsonObject { ["enabled"] = cfg["claudeHook"].Bool("enabled"), ["installed"] = ClaudeHook.Installed() },
+        ["notifications"] = new JsonObject { ["enabled"] = cfg["notifications"].Bool("windows", true), ["available"] = mirror.Available, ["error"] = mirror.Error },
+        ["github"] = new JsonObject
+        {
+            ["token"] = cfg["github"].Str("token") != "",
+            ["repos"] = cfg["github"].Arr("repos").Count,
+            ["me"] = gh.Str("me"),
+            ["error"] = gh.Str("error"),
+            ["updated"] = gh["updated"]?.DeepClone(),
+        },
+    });
+});
+// lists the repositories the GitHub token can see, most recently pushed first (for the picker in the editor)
+app.MapPost("/api/github/repos", async (HttpRequest r, CancellationToken ct) =>
+{
+    var b = await BodyJson(r);
+    var token = b.Str("token");
+    if (token == "") token = config.Snapshot()["github"].Str("token");
+    if (token == "") return Fail("Cole um token do GitHub primeiro.");
+    using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user/repos?sort=pushed&per_page=60&affiliation=owner,collaborator,organization_member");
+    req.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    req.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+    using var res = await http.SendAsync(req, ct);
+    if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) return Fail("Token inválido ou expirado.", 401);
+    if (!res.IsSuccessStatusCode) return Fail($"GitHub respondeu {(int)res.StatusCode}.", 502);
+    var list = Json.Parse(await res.Content.ReadAsStringAsync(ct)) as JsonArray ?? new JsonArray();
+    return JsonResult(new JsonArray(list.Select(x => (JsonNode)new JsonObject
+    {
+        ["name"] = x.Str("full_name"), ["private"] = x.Bool("private"), ["pushed"] = x.Str("pushed_at"), ["description"] = x.Str("description"),
+    }).ToArray()));
+});
+
+// ---- custom wallpaper: resized to 2560 px max, EXIF rotation applied, stored as JPEG ----
+static string WallpaperPath() => AppPaths.File("wallpaper.jpg");
+app.MapGet("/api/wallpaper", (HttpContext ctx) =>
+{
+    if (!File.Exists(WallpaperPath())) return Results.NotFound();
+    ctx.Response.Headers.CacheControl = "public, max-age=31536000"; // the panel asks with ?v=<version>
+    return Results.File(WallpaperPath(), "image/jpeg");
+});
+app.MapPost("/api/wallpaper", async (HttpRequest r) =>
+{
+    using var buf = new MemoryStream();
+    await r.Body.CopyToAsync(buf);
+    if (buf.Length == 0 || buf.Length > 40_000_000) return Fail("Envie uma imagem de até 40 MB.");
+    try
+    {
+        buf.Position = 0;
+        using var src = new System.Drawing.Bitmap(buf);
+        // photos from phones carry their rotation in EXIF tag 0x0112
+        if (src.PropertyIdList.Contains(0x0112))
+        {
+            var o = src.GetPropertyItem(0x0112)?.Value?[0] ?? 1;
+            var flip = o switch
+            {
+                3 => System.Drawing.RotateFlipType.Rotate180FlipNone,
+                6 => System.Drawing.RotateFlipType.Rotate90FlipNone,
+                8 => System.Drawing.RotateFlipType.Rotate270FlipNone,
+                _ => System.Drawing.RotateFlipType.RotateNoneFlipNone,
+            };
+            src.RotateFlip(flip);
+        }
+        var scale = Math.Min(1.0, 2560.0 / Math.Max(src.Width, src.Height));
+        int w = Math.Max(1, (int)(src.Width * scale)), h = Math.Max(1, (int)(src.Height * scale));
+        using var dst = new System.Drawing.Bitmap(w, h);
+        using (var g = System.Drawing.Graphics.FromImage(dst))
+        {
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            g.DrawImage(src, 0, 0, w, h);
+        }
+        var jpeg = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders().First(c => c.MimeType == "image/jpeg");
+        using var ep = new System.Drawing.Imaging.EncoderParameters(1);
+        ep.Param[0] = new System.Drawing.Imaging.EncoderParameter(System.Drawing.Imaging.Encoder.Quality, 85L);
+        dst.Save(WallpaperPath(), jpeg, ep);
+        return JsonResult(new JsonObject { ["ok"] = true, ["v"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), ["width"] = w, ["height"] = h, ["bytes"] = new FileInfo(WallpaperPath()).Length });
+    }
+    catch (Exception e) { return Fail("Não consegui ler essa imagem: " + e.Message); }
+});
+app.MapDelete("/api/wallpaper", () => { try { File.Delete(WallpaperPath()); } catch { } return Ok(); });
+
+// ---- Wi-Fi pairing ----
+app.MapGet("/api/hello", () => JsonResult(new JsonObject { ["name"] = "KONGBOX", ["host"] = Environment.MachineName }));
+app.MapGet("/api/lan", () => JsonResult(lan.Status(lanEnabled)));
+app.MapPost("/api/pair/start", () => lanEnabled ? JsonResult(lan.StartPairing()) : Fail("Ative o Wi-Fi e reinicie o agente primeiro."));
+app.MapPost("/api/pair/cancel", () => { lan.CancelPairing(); return Ok(); });
+app.MapPost("/api/pair/claim", async (HttpRequest r) =>
+{
+    var b = await BodyJson(r);
+    var (token, error) = lan.Claim(b.Str("code"), b.Str("name"));
+    return token is null ? Fail(error ?? "Código inválido.", 403) : JsonResult(new JsonObject { ["token"] = token, ["host"] = Environment.MachineName });
+});
+app.MapDelete("/api/lan/phones/{id}", (string id) => lan.Revoke(id) ? Ok("Celular removido.") : Fail("Não encontrado.", 404));
+app.MapPost("/api/restart", () =>
+{
+    // a fresh process waits for this one to exit, then takes over (Kestrel rebinds with the new Wi-Fi setting)
+    Process.Start(new ProcessStartInfo(Environment.ProcessPath!, $"--restart-wait {Environment.ProcessId}") { UseShellExecute = false })?.Dispose();
+    _ = Task.Run(async () => { await Task.Delay(400); cts.Cancel(); });
+    return Ok("Reiniciando…");
 });
 
 // ---- settings (editor) ----
@@ -354,16 +605,15 @@ app.MapPost("/api/autostart", async (HttpRequest r) =>
     return Ok(Autostart.Enabled() ? "Inicia com o Windows." : "Não inicia com o Windows.");
 });
 
-var cts = new CancellationTokenSource();
 Tray.Start(Url, () => cts.Cancel());
-Log.Info($"KONGBOX agent listening on {Url}");
+Log.Info($"KONGBOX agent listening on {Url}" + (lanEnabled ? $" and https://*:{Lan.Port}" : ""));
 if (args.Contains("--open")) Process.Start(new ProcessStartInfo(Url) { UseShellExecute = true })?.Dispose();
 
 try { await app.RunAsync(cts.Token); }
 catch (IOException e) { Log.Warn("server: " + e.Message); }
 finally
 {
-    sys.Dispose(); procs.Dispose(); media.Dispose(); rules.Dispose(); sessions.Dispose(); quotas.Dispose(); github.Dispose(); adb.Dispose();
+    mirror.Dispose(); sys.Dispose(); procs.Dispose(); media.Dispose(); rules.Dispose(); sessions.Dispose(); quotas.Dispose(); github.Dispose(); adb.Dispose();
 }
 return 0;
 

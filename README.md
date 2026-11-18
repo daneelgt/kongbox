@@ -41,6 +41,18 @@ Ferramentas (nesta máquina ficam em `E:\DevTools`): .NET 10 SDK, JDK 17, Androi
 2. Em <http://127.0.0.1:8765> › **Celular** › *Instalar app* › *Abrir KONGBOX*.
 3. Monte as páginas em **Páginas**; o celular atualiza em segundos.
 
+## Wi-Fi
+
+1. Em <http://127.0.0.1:8765> › **Celular**, ligue **Conectar pelo Wi-Fi** (o agente reinicia e o Windows pede
+   permissão no firewall uma vez).
+2. Clique **Parear pelo Wi-Fi**: aparece um QR code e um código de 6 dígitos (vale 5 minutos).
+3. No celular, escaneie o QR com a câmera, ou abra o KONGBOX sem cabo e digite o endereço e o código. Confira
+   se o código de verificação é igual nas duas telas.
+
+Depois disso o app tenta o USB primeiro e, sem cabo, entra pelo Wi-Fi sozinho. Dá para usar só um carregador de
+parede. O tráfego é HTTPS com o certificado do PC fixado no celular; a porta Wi-Fi só expõe a API do painel
+(editor e configurações continuam só no próprio PC) e cada celular pareado pode ser removido em **Celular**.
+
 ## Webhooks
 
 ```sh

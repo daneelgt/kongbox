@@ -14,30 +14,29 @@
     } catch (e) { return new Date(); }
   }
 
-  // ---------- clock ----------
+  // ---------- clock (iPad lock screen: date on top, big bold time) ----------
   KB.def('clock', {
     mount: function (el, w) {
       var status = KB.opt(w, 'status', true), weather = KB.opt(w, 'weather', true), date = KB.opt(w, 'date', true);
-      el.classList.toggle('no-status', !status);
-      el.classList.toggle('no-date', !date && !weather);
       el.innerHTML =
-        '<div class="ck">' +
-        '<div class="ck-t num"><span class="hm"></span><span class="ss"></span></div>' +
-        (date || weather ? '<div class="ck-r">' + (date ? '<div class="ck-d"></div>' : '') + (weather ? '<div class="ck-w"></div>' : '') + '</div>' : '') +
-        '</div>' +
-        (status ? '<div class="ck-s mono"></div>' : '');
-      var hm = el.querySelector('.hm'), ss = el.querySelector('.ss'), d = el.querySelector('.ck-d'), wx = el.querySelector('.ck-w'), st = el.querySelector('.ck-s');
+        '<div class="lk">' +
+        (date || weather ? '<div class="lk-d">' + (date ? '<span class="lk-date"></span>' : '') + (weather ? '<span class="lk-w"></span>' : '') + '</div>' : '') +
+        '<div class="lk-t num"><span class="hm"></span><span class="ss"></span></div>' +
+        (status ? '<div class="lk-s mono"></div>' : '') +
+        '</div>';
+      var hm = el.querySelector('.hm'), ss = el.querySelector('.ss'), d = el.querySelector('.lk-date'), wx = el.querySelector('.lk-w'), st = el.querySelector('.lk-s');
       function secondly() {
         var now = new Date();
         hm.textContent = fmt.time(now, false);
         ss.textContent = showSeconds() ? (now.getSeconds() < 10 ? '0' : '') + now.getSeconds() : '';
-        if (d) d.textContent = now.toLocaleDateString('pt-BR', { weekday: wx ? 'short' : 'long', day: 'numeric', month: wx ? 'short' : 'long' }).replace(/\./g, '');
+        // narrow cards get the short date ("qua, 18 de nov"), wide ones the full one
+        if (d) d.textContent = now.toLocaleDateString('pt-BR', el.clientWidth < 360 ? { weekday: 'short', day: 'numeric', month: 'short' } : { weekday: 'long', day: 'numeric', month: 'long' }).replace(/\./g, '');
       }
       function loadWx() {
         if (!wx) return;
         KB.weather().then(function (data) {
           var c = data.current;
-          wx.innerHTML = KB.wxIcon(c.weather_code, c.is_day) + '<b class="num">' + Math.round(c.temperature_2m) + '°</b><span>' + esc(KB.wxText(c.weather_code)) + '</span>';
+          wx.innerHTML = KB.wxIcon(c.weather_code, c.is_day) + '<span class="num">' + Math.round(c.temperature_2m) + '°</span>';
         }).catch(function () { wx.innerHTML = ''; });
       }
       secondly(); loadWx();
@@ -49,7 +48,6 @@
           var sys = s.sys, host = (sys.host || 'pc').toLowerCase();
           var bits = ['cpu ' + fmt.pct(sys.cpu), 'ram ' + fmt.pct(sys.ram && sys.ram.pct)];
           if (sys.gpu && sys.gpu.util != null) bits.push('gpu ' + fmt.pct(sys.gpu.util));
-          if (sys.net) bits.push('↓ ' + fmt.rate(sys.net.down));
           var q = (s.quotas || [])[0];
           if (q && q.windows && q.windows[0]) bits.push(q.provider + ' ' + fmt.pct(q.windows[0].pct));
           st.innerHTML = '<span class="pr">kong@' + esc(host) + '</span> <span class="ar">›</span> ' + esc(bits.join(' · '));
@@ -59,52 +57,73 @@
     },
   });
 
-  // ---------- analog ----------
+  // ---------- analog face (iPad Clock widget): numbers, ticks, orange second hand ----------
+  /** One clock face as SVG. Hands carry classes h/m/s so setFace() can turn them. */
+  KB.clockFace = function (label, light, seconds) {
+    var nums = '', ticks = '';
+    for (var i = 1; i <= 12; i++) {
+      var a = i * Math.PI / 6;
+      nums += '<text x="' + (50 + 35.5 * Math.sin(a)).toFixed(2) + '" y="' + (50 - 35.5 * Math.cos(a) + 4.6).toFixed(2) + '">' + i + '</text>';
+    }
+    for (var t = 0; t < 60; t++) {
+      if (t % 5 === 0) continue;
+      ticks += '<line x1="50" y1="5" x2="50" y2="7.5" transform="rotate(' + t * 6 + ' 50 50)"/>';
+    }
+    return '<svg class="face' + (light ? ' light' : '') + '" viewBox="0 0 100 100">' +
+      '<circle class="bg" cx="50" cy="50" r="49"/>' +
+      '<g class="tk">' + ticks + '</g><g class="nm">' + nums + '</g>' +
+      (label ? '<text class="lb" x="50" y="68">' + esc(label) + '</text>' : '') +
+      '<line class="h" x1="50" y1="50" x2="50" y2="29" stroke-width="4.2" stroke-linecap="round"/>' +
+      '<line class="m" x1="50" y1="50" x2="50" y2="15" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle class="hub" cx="50" cy="50" r="3"/>' +
+      (seconds ? '<line class="s" x1="50" y1="60" x2="50" y2="10" stroke-width="1.1" stroke-linecap="round"/><circle class="shub" cx="50" cy="50" r="1.6"/>' : '') +
+      '</svg>';
+  };
+  KB.setFace = function (svg, d) {
+    var sec = d.getSeconds(), min = d.getMinutes() + sec / 60, hr = d.getHours() % 12 + min / 60;
+    var h = svg.querySelector('.h'), m = svg.querySelector('.m'), s = svg.querySelector('.s');
+    h.setAttribute('transform', 'rotate(' + (hr * 30).toFixed(2) + ' 50 50)');
+    m.setAttribute('transform', 'rotate(' + (min * 6).toFixed(2) + ' 50 50)');
+    if (s) s.setAttribute('transform', 'rotate(' + sec * 6 + ' 50 50)');
+  };
+  function cityCode(name) { return String(name || '').replace(/[^A-Za-zÀ-ÿ]/g, '').slice(0, 3).toUpperCase(); }
+  function dayLabel(d, local) {
+    var diff = Math.round((d - local) / 3600000);
+    var day = d.getDate() !== local.getDate() ? (d > local ? 'Amanhã' : 'Ontem') : 'Hoje';
+    return day + ', ' + (diff >= 0 ? '+' : '') + diff + 'H';
+  }
+
   KB.def('analog', {
     mount: function (el, w) {
       var tz = KB.opt(w, 'tz', ''), label = KB.opt(w, 'label', ''), secHand = KB.opt(w, 'seconds', true);
-      var ticks = '';
-      for (var i = 0; i < 60; i++) {
-        var big = i % 5 === 0;
-        ticks += '<line x1="50" y1="' + (big ? 6 : 5) + '" x2="50" y2="' + (big ? 12 : 8) + '" transform="rotate(' + i * 6 + ' 50 50)" stroke="' + (big ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.2)') + '" stroke-width="' + (big ? 1.6 : .8) + '" stroke-linecap="round"/>';
-      }
-      el.innerHTML = '<div class="an">' +
-        '<svg viewBox="0 0 100 100">' + ticks +
-        '<line class="h" x1="50" y1="50" x2="50" y2="27" stroke="#f5f5f7" stroke-width="3.6" stroke-linecap="round"/>' +
-        '<line class="m" x1="50" y1="50" x2="50" y2="15" stroke="#f5f5f7" stroke-width="2.4" stroke-linecap="round"/>' +
-        (secHand ? '<line class="s" x1="50" y1="58" x2="50" y2="12" stroke="var(--amber)" stroke-width="1" stroke-linecap="round"/>' : '') +
-        '<circle cx="50" cy="50" r="2.4" fill="var(--amber)"/></svg>' +
-        (label ? '<div class="an-l mono">' + esc(label) + '</div>' : '') + '</div>';
-      var h = el.querySelector('.h'), m = el.querySelector('.m'), s = el.querySelector('.s');
-      function secondly() {
-        var d = zoned(tz), sec = d.getSeconds(), min = d.getMinutes() + sec / 60, hr = d.getHours() % 12 + min / 60;
-        h.setAttribute('transform', 'rotate(' + hr * 30 + ' 50 50)');
-        m.setAttribute('transform', 'rotate(' + min * 6 + ' 50 50)');
-        if (s) s.setAttribute('transform', 'rotate(' + sec * 6 + ' 50 50)');
-      }
+      var light = KB.opt(w, 'face', 'dark') === 'light';
+      el.innerHTML = '<div class="an">' + KB.clockFace(cityCode(label), light, secHand) + '</div>';
+      var face = el.querySelector('svg');
+      function secondly() { KB.setFace(face, zoned(tz)); }
       secondly();
       return { secondly: secondly };
     },
   });
 
-  // ---------- world clocks ----------
+  // ---------- world clocks (iPad medium Clock widget: a row of faces) ----------
   KB.def('worldclock', {
     mount: function (el, w) {
-      var zones = KB.list(KB.opt(w, 'zones', [])).map(function (z) {
+      var zones = KB.list(KB.opt(w, 'zones', [])); // template pages come without options: use the catalog's cities
+      if (!zones.length) zones = ['São Paulo=America/Sao_Paulo', 'Lisboa=Europe/Lisbon', 'Nova York=America/New_York', 'Tóquio=Asia/Tokyo'];
+      zones = zones.map(function (z) {
         var p = z.split('='); return { name: p[0].trim(), tz: (p[1] || p[0]).trim() };
-      });
+      }).slice(0, 6);
+      var light = KB.opt(w, 'face', 'dark') === 'light';
       el.innerHTML = '<div class="wc">' + zones.map(function (z) {
-        return '<div class="wc-i"><div class="wc-n mono">' + esc(z.name) + '</div><div class="wc-t num"></div><div class="wc-o mono"></div></div>';
+        return '<div class="wc-i">' + KB.clockFace(cityCode(z.name), light, false) + '<div class="wc-n">' + esc(z.name) + '</div><div class="wc-o"></div></div>';
       }).join('') + '</div>';
       var items = el.querySelectorAll('.wc-i');
       function secondly() {
         var local = new Date();
         zones.forEach(function (z, i) {
-          var d = zoned(z.tz), diff = Math.round((d - local) / 3600000);
-          items[i].querySelector('.wc-t').textContent = fmt.time(d, false);
-          var day = d.getDate() !== local.getDate() ? (d > local ? ' · amanhã' : ' · ontem') : '';
-          items[i].querySelector('.wc-o').textContent = (diff === 0 ? 'local' : (diff > 0 ? '+' : '') + diff + ' h') + day;
-          items[i].classList.toggle('night', d.getHours() < 7 || d.getHours() >= 20);
+          var d = zoned(z.tz);
+          KB.setFace(items[i].querySelector('svg'), d);
+          items[i].querySelector('.wc-o').textContent = dayLabel(d, local);
         });
       }
       secondly();
@@ -141,23 +160,30 @@
     },
   });
 
-  // ---------- calendar ----------
+  // ---------- calendar (iPad: day view when small, month when square, both when wide) ----------
+  var WEEKDAYS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
   KB.def('calendar', {
     mount: function (el, w) {
       var mon = KB.opt(w, 'mondayFirst', false), lastDay = -1;
       function draw() {
-        var now = new Date(), y = now.getFullYear(), m = now.getMonth();
-        lastDay = now.getDate();
+        var now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+        lastDay = today;
         var first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
         var offset = mon ? (first + 6) % 7 : first;
-        var names = mon ? DAYS.slice(1).concat(DAYS[0]) : DAYS;
-        var cells = names.map(function (n) { return '<i class="hd">' + n[0].toUpperCase() + '</i>'; }).join('');
+        var names = mon ? ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'] : ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+        var cells = names.map(function (n) { return '<i class="hd">' + n + '</i>'; }).join('');
         for (var i = 0; i < offset; i++) cells += '<i></i>';
         for (var d = 1; d <= days; d++) {
           var dow = new Date(y, m, d).getDay();
-          cells += '<i class="' + (d === now.getDate() ? 'today' : '') + (dow === 0 || dow === 6 ? ' we' : '') + '">' + d + '</i>';
+          cells += '<i class="' + (d === today ? 'today' : d < today ? 'past' : '') + (dow === 0 || dow === 6 ? ' we' : '') + '">' + d + '</i>';
         }
-        el.innerHTML = '<div class="cal-h"><b>' + esc(now.toLocaleDateString('pt-BR', { month: 'long' })) + '</b><span class="mono faint">' + y + '</span></div><div class="cal">' + cells + '</div>';
+        var month = now.toLocaleDateString('pt-BR', { month: 'long' });
+        el.innerHTML =
+          '<div class="cl2">' +
+          '<div class="cl2-day"><div class="cl2-wd">' + esc(WEEKDAYS[now.getDay()]) + '</div><div class="cl2-n num">' + today + '</div>' +
+          '<div class="cl2-ev">Sem eventos hoje</div></div>' +
+          '<div class="cl2-month"><div class="cl2-mh">' + esc(month) + '</div><div class="cl2-g">' + cells + '</div></div>' +
+          '</div>';
       }
       draw();
       return { secondly: function () { if (new Date().getDate() !== lastDay) draw(); } };
@@ -218,7 +244,7 @@
       var colors = { focus: 'var(--red)', short: 'var(--green)', long: 'var(--cyan)' };
       var st = KB.store.get(key, { mode: 'focus', endsAt: 0, left: len.focus * 60, round: 1 });
       el.innerHTML = '<div class="pm"><div class="pm-ring">' + KB.ring(0, colors[st.mode], 6) + '<div class="pm-c"><div class="pm-t num"></div><div class="pm-m mono"></div></div></div>' +
-        '<div class="pm-b"><button class="btn press" data-a="reset">↺</button><button class="btn primary press" data-a="go"></button><button class="btn press" data-a="skip">⏭</button></div></div>';
+        '<div class="pm-b"><button class="btn press" data-a="reset">' + KBIcons.html('refresh') + '</button><button class="btn primary press" data-a="go"></button><button class="btn press" data-a="skip">' + KBIcons.html('next') + '</button></div></div>';
       var ring = el.querySelector('svg'), t = el.querySelector('.pm-t'), md = el.querySelector('.pm-m'), go = el.querySelector('[data-a=go]');
       function left() { return st.endsAt ? Math.max(0, (st.endsAt - Date.now()) / 1000) : st.left; }
       function next() {
@@ -261,14 +287,14 @@
       var st = KB.store.get(key, { endsAt: 0, total: 0 });
       el.innerHTML = KB.header('timer') + '<div class="w-b tm"><div class="tm-t num"></div><div class="bar"><i></i></div><div class="tm-p">' +
         presets.map(function (p) { return '<button class="chip press" data-m="' + p + '">' + p + ' min</button>'; }).join('') +
-        '<button class="chip press" data-m="0">✕</button></div></div>';
+        '<button class="chip press" data-m="0">' + KBIcons.html('x') + '</button></div></div>';
       var t = el.querySelector('.tm-t'), bar = el.querySelector('.bar i');
       function draw() {
         var l = st.endsAt ? (st.endsAt - Date.now()) / 1000 : 0;
         if (st.endsAt && l <= 0) {
           st.endsAt = 0; KB.store.set(key, st);
           KB.buzz('0,300,150,300,150,300');
-          KB.toast({ title: 'Timer', text: 'Acabou o tempo.', level: 'warn', icon: '⏲' });
+          KB.toast({ title: 'Timer', text: 'Acabou o tempo.', level: 'warn', icon: 'timer' });
         }
         t.textContent = st.endsAt ? fmt.clock(l) : '0:00';
         bar.style.width = st.endsAt && st.total ? (100 - l / st.total * 100) + '%' : '0%';

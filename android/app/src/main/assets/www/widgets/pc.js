@@ -15,9 +15,11 @@
       return {
         update: function (st) {
           if (!st.sys) return;
-          var val = m.get(st.sys), shown = m.show(val), sp = shown.indexOf(' ');
-          // "12.4 KB/s" → big number, small unit (the way iOS widgets set units)
-          v.innerHTML = sp > 0 ? esc(shown.slice(0, sp)) + '<small>' + esc(shown.slice(sp + 1)) + '</small>' : esc(shown);
+          // the number glides to its new value; "12.4 KB/s" keeps a big number and a small unit (like iOS widgets)
+          KB.tween(v, m.get(st.sys), function (x) {
+            var shown = m.show(x), sp = shown.indexOf(' ');
+            return sp > 0 ? esc(shown.slice(0, sp)) + '<small>' + esc(shown.slice(sp + 1)) + '</small>' : esc(shown);
+          });
           s.textContent = m.sub ? m.sub(st.sys) : '';
           var h = st.hist && st.hist[name];
           if (h) KB.setSpark(sp, h.slice(-60), histMax(m, h.slice(-60)));
@@ -36,7 +38,7 @@
         update: function (st) {
           if (!st.sys) return;
           var val = m.get(st.sys);
-          v.textContent = m.show(val);
+          KB.tween(v, val, function (x) { return esc(m.show(x)); });
           var pct = m.max ? val / m.max * 100 : 0;
           KB.setRing(ring, pct, m.max === 100 && val >= 90 ? 'var(--red)' : m.color);
         },
@@ -227,7 +229,7 @@
         if (m.dur) pos = Math.min(pos, m.dur);
         cur.textContent = fmt.clock(pos);
         dur.textContent = m.dur ? fmt.clock(m.dur) : '';
-        bar.style.width = m.dur ? (pos / m.dur * 100) + '%' : '0%';
+        bar.style.transform = 'scaleX(' + (m.dur ? Math.min(1, pos / m.dur) : 0).toFixed(4) + ')';
       }
       return {
         secondly: tickPos,
@@ -236,7 +238,7 @@
           el.classList.toggle('idle', !m || !m.title);
           if (!m || !m.title) {
             t.textContent = 'Nada tocando'; a.textContent = 'dê play em algo no PC'; app.textContent = '// media';
-            art.innerHTML = ICON.play; bg.style.backgroundImage = ''; bar.style.width = '0%'; cur.textContent = ''; dur.textContent = '';
+            art.innerHTML = ICON.play; bg.style.backgroundImage = ''; bar.style.transform = 'scaleX(0)'; cur.textContent = ''; dur.textContent = '';
             lastArt = null; return;
           }
           at = Date.now();
@@ -249,7 +251,7 @@
             if (m.art) {
               var url = '/api/art?k=' + m.art;
               art.innerHTML = '<img alt="" src="' + url + '">';
-              bg.style.backgroundImage = 'url("' + url + '")';
+              bg.style.backgroundImage = 'url("' + url + '&small=1")';
             } else { art.innerHTML = ICON.play; bg.style.backgroundImage = ''; }
           }
           tickPos();
@@ -258,39 +260,54 @@
     },
   });
 
-  // ---------- volume ----------
+  // ---------- volume (Control Center capsule: vertical when tall, horizontal when wide) ----------
+  function speaker(level, muted) {
+    var waves = muted ? '<path d="M16 9l5 6M21 9l-5 6"/>' : (level > 0 ? '<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/>' : '') + (level >= 40 ? '<path d="M18 7a7 7 0 0 1 0 10"/>' : '');
+    return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>' + waves + '</svg>';
+  }
   KB.def('volume', {
     mount: function (el) {
-      el.innerHTML = '<div class="vo"><div class="vo-s" data-noswipe><i></i><span class="vo-v num"></span></div><button class="vo-m press"></button></div>';
-      var slider = el.querySelector('.vo-s'), fill = slider.querySelector('i'), val = el.querySelector('.vo-v'), mute = el.querySelector('.vo-m');
-      var level = 0, muted = false, dragging = false, sendT = 0;
+      el.innerHTML = '<div class="vo2"><div class="vo2-s" data-noswipe><i></i><span class="vo2-ic"></span><span class="vo2-v num"></span></div><button class="vo2-m press"></button></div>';
+      var slider = el.querySelector('.vo2-s'), fill = slider.querySelector('i'), icon = slider.querySelector('.vo2-ic'), val = slider.querySelector('.vo2-v'), mute = el.querySelector('.vo2-m');
+      var level = 0, muted = false, dragging = false, sendT = 0, sentAt = 0;
+      function horizontal() { var r = slider.getBoundingClientRect(); return r.width > r.height; }
       function draw() {
-        fill.style.height = (muted ? 0 : level) + '%';
+        var shown = muted ? 0 : level;
+        // one element, two orientations: the fill grows from the bottom or from the left
+        fill.style.transform = horizontal() ? 'scaleX(' + (shown / 100) + ')' : 'scaleY(' + (shown / 100) + ')';
+        slider.classList.toggle('h', horizontal());
         val.textContent = muted ? 'mudo' : level + '%';
-        var waves = muted ? '<path d="M16 9l5 6M21 9l-5 6"/>' : (level > 0 ? '<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/>' : '') + (level >= 40 ? '<path d="M18 7a7 7 0 0 1 0 10"/>' : '');
-        mute.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/>' + waves + '</svg>';
+        icon.innerHTML = speaker(level, muted);
+        mute.innerHTML = speaker(level, muted);
         mute.classList.toggle('on', muted);
+        slider.classList.toggle('low', shown < 18);
       }
-      function setFromY(y) {
+      function setFrom(e) {
         var r = slider.getBoundingClientRect();
-        level = Math.round(KB.clamp((r.bottom - y) / r.height, 0, 1) * 100);
-        muted = false; draw();
+        var p = horizontal() ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
+        level = Math.round(KB.clamp(p, 0, 1) * 100);
+        muted = false;
+        draw();
         clearTimeout(sendT);
-        sendT = setTimeout(function () { KB.api('/api/volume', { method: 'POST', body: { level: level, muted: false } }); }, 60);
+        sendT = setTimeout(function () { sentAt = Date.now(); KB.api('/api/volume', { method: 'POST', body: { level: level, muted: false } }); }, 50);
       }
-      slider.addEventListener('pointerdown', function (e) { dragging = true; try { slider.setPointerCapture(e.pointerId); } catch (err) { } setFromY(e.clientY); });
-      slider.addEventListener('pointermove', function (e) { if (dragging) setFromY(e.clientY); });
+      slider.addEventListener('pointerdown', function (e) { dragging = true; try { slider.setPointerCapture(e.pointerId); } catch (err) { } setFrom(e); });
+      slider.addEventListener('pointermove', function (e) { if (dragging) setFrom(e); });
       slider.addEventListener('pointerup', function () { dragging = false; KB.haptic(); });
       slider.addEventListener('pointercancel', function () { dragging = false; });
       mute.addEventListener('click', function () {
-        KB.haptic(); muted = !muted; draw();
+        KB.haptic(); muted = !muted; draw(); sentAt = Date.now();
         KB.api('/api/volume', { method: 'POST', body: { toggleMute: true } });
       });
+      if (window.ResizeObserver) { var ro = new ResizeObserver(draw); ro.observe(slider); }
+      draw();
       return {
         update: function (s) {
-          if (!s.volume || dragging || Date.now() - sendT < 1500) return;
+          if (!s.volume || dragging || Date.now() - sentAt < 1500) return;
+          if (s.volume.level === level && s.volume.muted === muted) return;
           level = s.volume.level; muted = s.volume.muted; draw();
         },
+        destroy: function () { if (ro) ro.disconnect(); },
       };
     },
   });
@@ -304,7 +321,7 @@
     });
   }
   function keyHtml(s) {
-    return '<button class="key press" data-id="' + esc(s.id) + '" style="--kc:' + esc(s.color || '#3a3a3c') + '"><span class="key-i">' + esc(s.icon || '▢') + '</span><span class="key-l">' + esc(s.label || s.id) + '</span></button>';
+    return '<button class="key press" data-id="' + esc(s.id) + '" style="--kc:' + esc(s.color || '#3a3a3c') + '"><span class="key-i">' + KBIcons.html(s.icon || 'grid') + '</span><span class="key-l">' + esc(s.label || s.id) + '</span></button>';
   }
   function toggles(el, st) {
     Array.prototype.forEach.call(el.querySelectorAll('.key'), function (k) {

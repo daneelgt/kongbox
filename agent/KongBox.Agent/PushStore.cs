@@ -23,7 +23,8 @@ sealed class PushStore
                 if (v is JsonObject o) values[k] = (JsonObject)o.DeepClone();
             foreach (var n in root.Arr("notices"))
                 if (n is JsonObject o) notices.Add((JsonObject)o.DeepClone());
-            nextNotice = notices.Count == 0 ? 1 : (long)notices.Max(n => n.Num("id")) + 1;
+            // the counter is saved so ids never repeat, even after the inbox is cleared and the agent restarts
+            nextNotice = Math.Max((long)root.Num("nextId", 1), notices.Count == 0 ? 1 : (long)notices.Max(n => n.Num("id")) + 1);
         }
         catch (Exception e) { Log.Warn("push.json: " + e.Message); }
     }
@@ -36,6 +37,7 @@ sealed class PushStore
             {
                 ["values"] = new JsonObject(values.Select(kv => KeyValuePair.Create(kv.Key, (JsonNode?)kv.Value.DeepClone()))),
                 ["notices"] = new JsonArray(notices.Select(n => (JsonNode)n.DeepClone()).ToArray()),
+                ["nextId"] = nextNotice,
             };
             File.WriteAllText(FilePath, o.ToJsonString(Json.Pretty));
         }
@@ -105,6 +107,12 @@ sealed class PushStore
     }
 
     public long LastNoticeId { get { lock (gate) return nextNotice - 1; } }
+
+    public JsonObject? Notice(long id) { lock (gate) return notices.FirstOrDefault(n => (long)n.Num("id") == id)?.DeepClone() as JsonObject; }
+    public bool RemoveNotice(long id) { lock (gate) { var n = notices.RemoveAll(x => (long)x.Num("id") == id); if (n > 0) Save(); return n > 0; } }
+
+    /// <summary>Empties the notification inbox (ids keep counting so phones do not replay old ones).</summary>
+    public void ClearNotices() { lock (gate) { notices.Clear(); Save(); } }
 
     public void Goto(string page, int countdown)
     {
