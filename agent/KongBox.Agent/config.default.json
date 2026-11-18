@@ -1,0 +1,79 @@
+{
+  // KONGBOX settings. Easiest to edit at http://127.0.0.1:8765 (tray icon > Configurações).
+  // Manual edits are picked up on the next request; no restart needed.
+
+  // Only use the phone with this serial number (null = every connected Android device)
+  "deviceSerial": null,
+  // Path to adb.exe (null = searched in PATH, the Android SDK and E:\DevTools)
+  "adbPath": null,
+
+  // Weather location (Open-Meteo, no API key)
+  "weather": { "city": "São Paulo", "lat": -23.55, "lon": -46.63 },
+
+  // Ping target for the ping metric and rules, every 5 s (empty = off)
+  "ping": { "host": "1.1.1.1" },
+
+  // Night mode: between these times the screen dims and only the clock stays. Tap to wake for 30 s.
+  "night": { "enabled": true, "start": "00:30", "end": "07:30", "brightness": 0.02 },
+
+  // seconds on the clock, go back to the first page after N idle seconds (0 = never), vibrate,
+  // flip pages with the phone's volume keys, move the panel a few pixels every 2 minutes (OLED)
+  "display": { "showSeconds": true, "idleReturnSec": 90, "vibrate": true, "volumeKeys": true, "pixelShift": false, "orientation": "auto", "hour24": true },
+
+  // look: "glass" (default), "flat", "seamless"; accent colour; corner radius and gap in px
+  "appearance": { "preset": "glass", "accent": "#0a84ff", "radius": 22, "gap": 10, "mono": true },
+
+  // AI quotas: Claude reads ~/.claude/.credentials.json and asks api.anthropic.com for your own usage;
+  // Codex reads the rate limits it writes into ~/.codex/sessions. Nothing else leaves the computer.
+  "quotas": { "claude": true, "codex": true },
+
+  // Claude Code permission prompts on the phone (install the hook in Configurações > Geral)
+  "claudeHook": { "enabled": false, "timeoutSec": 50 },
+
+  // GitHub widget: repositories "owner/name"; token optional (needed for private repos and higher limits)
+  "github": { "token": "", "repos": [] },
+
+  // Webhook key for other machines (Wi-Fi phase); local senders need no key
+  "webhookKey": "",
+
+  // Pages in the order they appear on the phone. { "template": "<id>" } becomes real widgets on first load.
+  "pages": [
+    { "template": "home" },
+    { "template": "ai" },
+    { "template": "work" },
+    { "template": "system" },
+    { "template": "procs" },
+    { "template": "deck" },
+    { "template": "music" },
+    { "template": "focus", "enabled": false },
+    { "template": "world", "enabled": false }
+  ],
+
+  // Shortcut keys. The phone only sends the "id"; commands live in this file only.
+  // "cmd": a program, a URL / shell: / ms-settings: address, or builtin:lock | builtin:monitor-off | builtin:mute
+  //        | builtin:play-pause | builtin:next | builtin:prev
+  // "keys": a combination such as "ctrl+shift+m"; "text": typed as-is;
+  // "macro": [ { "keys": "ctrl+t" }, { "wait": 300 }, { "text": "hello" }, { "run": "<other id>" } ]
+  // "toggle": the push key that tells the phone whether this key is on (e.g. "mic")
+  "shortcuts": [
+    { "id": "terminal",   "label": "Terminal",     "icon": "⌨️", "color": "#3a3a3c", "cmd": "wt.exe" },
+    { "id": "explorer",   "label": "Arquivos",     "icon": "📁", "color": "#e5b84b", "cmd": "explorer.exe" },
+    { "id": "vscode",     "label": "VS Code",      "icon": "📝", "color": "#0a84ff", "cmd": "code" },
+    { "id": "browser",    "label": "GitHub",       "icon": "🐙", "color": "#30d158", "cmd": "https://github.com" },
+    { "id": "spotify",    "label": "Spotify",      "icon": "🎧", "color": "#1db954", "cmd": "spotify:" },
+    { "id": "calc",       "label": "Calculadora",  "icon": "🧮", "color": "#636366", "cmd": "calc.exe" },
+    { "id": "settings",   "label": "Ajustes",      "icon": "⚙️", "color": "#8e8e93", "cmd": "ms-settings:" },
+    { "id": "snip",       "label": "Recorte",      "icon": "✂️", "color": "#64d2ff", "cmd": "ms-screenclip:" },
+    { "id": "taskmgr",    "label": "Gerenciador",  "icon": "📊", "color": "#32d74b", "cmd": "taskmgr.exe" },
+    { "id": "mute",       "label": "Mudo",         "icon": "🔇", "color": "#ff9f0a", "cmd": "builtin:mute" },
+    { "id": "monitoroff", "label": "Tela off",     "icon": "🌙", "color": "#5e5ce6", "cmd": "builtin:monitor-off" },
+    { "id": "lock",       "label": "Bloquear",     "icon": "🔒", "color": "#ff453a", "cmd": "builtin:lock" }
+  ],
+
+  // Rules: when something happens on the computer, do something.
+  // when: { "metric": "cpu", "op": ">", "value": 90, "forSec": 30 } | { "process": "obs64", "running": true } | { "push": "build", "equals": "failed" }
+  // then: [ { "notify": { "title": "…", "text": "…", "level": "warn" } }, { "goto": "system" }, { "run": "<shortcut id>" }, { "push": { "key": "…", "value": "…" } } ]
+  "rules": [
+    { "id": "cpu-hot", "name": "CPU no talo", "enabled": true, "when": { "metric": "cpu", "op": ">", "value": 92, "forSec": 45 }, "then": [ { "notify": { "title": "CPU acima de 92%", "text": "Há 45 s. Veja a página Processos.", "level": "warn" } } ], "cooldownSec": 600 }
+  ]
+}

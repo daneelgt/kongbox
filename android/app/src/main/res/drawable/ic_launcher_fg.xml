@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "K" with a green terminal cursor, inside the 66dp safe zone of a 108dp adaptive icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F5F5F7"
+        android:pathData="M36,34h8v16.5l14.5,-16.5h10l-15,16.8 15.8,23.2h-9.6l-11.3,-16.8 -4.4,4.9v11.9h-8z" />
+    <path
+        android:fillColor="#30D158"
+        android:pathData="M64,68h12v6h-12z" />
+</vector>

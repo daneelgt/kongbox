@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KONGBOX · Configurações</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #f5f5f7; --side: #ececee; --card: #fff; --card-2: #f9f9fb; --line: rgba(0,0,0,.08); --line-2: rgba(0,0,0,.14);
+  --text: #1d1d1f; --text-2: #6e6e73; --text-3: #a1a1a6; --accent: #0071e3; --green: #28a745; --amber: #c77c00; --red: #d70015;
+  --canvas: #0b0b0c; --cell: rgba(255,255,255,.035); --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  --ease: cubic-bezier(.32,.72,0,1); --spring: cubic-bezier(.34,1.36,.64,1);
+  --sans: -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --mono: "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #161618; --side: #1c1c1e; --card: #232326; --card-2: #2a2a2d; --line: rgba(255,255,255,.08); --line-2: rgba(255,255,255,.14);
+    --text: #f5f5f7; --text-2: #a1a1a6; --text-3: #6e6e73; --accent: #0a84ff; --green: #30d158; --amber: #ff9f0a; --red: #ff453a; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25); }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* a class with display:block must not undo the hidden attribute */
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.4 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono { font-family: var(--mono); }
+.dim { color: var(--text-2); }
+.faint { color: var(--text-3); }
+
+#app { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
+aside { background: var(--side); border-right: 1px solid var(--line); padding: 18px 12px; display: flex; flex-direction: column; gap: 2px; overflow: auto; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+.brand .lg { width: 30px; height: 30px; border-radius: 8px; background: #121214; color: #fff; display: grid; place-items: center; font: 800 16px var(--sans); position: relative; }
+.brand .lg::after { content: ""; position: absolute; right: 5px; bottom: 6px; width: 7px; height: 3px; background: #30d158; animation: blink 1.1s steps(1) infinite; }
+.brand b { font-size: 15px; letter-spacing: -.01em; }
+.brand span { display: block; font: 11px var(--mono); color: var(--text-3); }
+@keyframes blink { 50% { opacity: 0; } }
+.nav { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; border: 0; background: none; text-align: left; color: var(--text); width: 100%; transition: background .15s; }
+.nav:hover { background: var(--line); }
+.nav.on { background: var(--accent); color: #fff; }
+.nav i { font-style: normal; width: 20px; text-align: center; }
+aside .foot { margin-top: auto; padding: 12px 10px 0; font: 11px/1.5 var(--mono); color: var(--text-3); }
+aside .foot .ok { color: var(--green); }
+
+main { overflow: auto; position: relative; }
+.view { display: none; padding: 28px 32px 120px; max-width: 1280px; animation: in .45s var(--ease); }
+.view.on { display: block; }
+@keyframes in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+h1 { font-size: 26px; letter-spacing: -.025em; margin: 0 0 4px; }
+.lead { color: var(--text-2); margin: 0 0 22px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); font-weight: 600; margin: 26px 0 8px 4px; }
+
+.group { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.item { display: flex; align-items: center; gap: 14px; padding: 11px 16px; min-height: 46px; border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.item > label, .item > .lbl { flex: 1; min-width: 0; }
+.item small { display: block; color: var(--text-2); font-size: 12px; margin-top: 1px; }
+input[type=text], input[type=number], input[type=password], input[type=time], select, textarea {
+  border: 1px solid var(--line-2); background: var(--card-2); border-radius: 8px; padding: 6px 9px; outline: none; transition: border-color .15s, box-shadow .15s; min-width: 0;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+textarea { width: 100%; resize: vertical; font-family: var(--mono); font-size: 12.5px; line-height: 1.5; }
+.item input[type=text], .item input[type=password] { width: 260px; }
+.item input[type=number] { width: 90px; }
+.sw { position: relative; width: 42px; height: 25px; flex: none; }
+.sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sw span { position: absolute; inset: 0; background: var(--line-2); border-radius: 99px; transition: background .25s; cursor: pointer; }
+.sw span::after { content: ""; position: absolute; left: 2px; top: 2px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: transform .3s var(--spring); }
+.sw input:checked + span { background: var(--green); }
+.sw input:checked + span::after { transform: translateX(17px); }
+.btn { border: 1px solid var(--line-2); background: var(--card); border-radius: 8px; padding: 6px 12px; font-weight: 500; transition: transform .2s var(--spring), background .15s; white-space: nowrap; }
+.btn:hover { background: var(--card-2); }
+.btn:active { transform: scale(.96); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { color: var(--red); }
+.btn.sm { padding: 3px 9px; font-size: 12.5px; }
+.btn.ghost { border-color: transparent; background: none; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; background: var(--line); font: 11.5px var(--mono); color: var(--text-2); }
+.chip.ok { color: var(--green); } .chip.warn { color: var(--amber); } .chip.err { color: var(--red); }
+code, .code { font: 12.5px var(--mono); background: var(--card-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+pre.code { padding: 12px 14px; overflow: auto; margin: 0; white-space: pre; position: relative; }
+
+/* ---------- pages editor ---------- */
+.ed { display: grid; grid-template-columns: 220px minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.plist { display: flex; flex-direction: column; gap: 4px; }
+.pg { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; background: none; text-align: left; width: 100%; cursor: pointer; transition: background .15s; }
+.pg:hover { background: var(--line); }
+.pg.on { background: var(--card); border-color: var(--line); box-shadow: var(--shadow); }
+.pg .e { font-size: 18px; width: 24px; text-align: center; }
+.pg .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg.off .t { color: var(--text-3); text-decoration: line-through; }
+.pg .n { font: 11px var(--mono); color: var(--text-3); }
+.pg[draggable=true] { cursor: grab; }
+.pg.drop { box-shadow: inset 0 2px 0 var(--accent); }
+.stage-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.stage-h input.title { font-size: 18px; font-weight: 600; border-color: transparent; background: none; padding: 4px 6px; width: 220px; }
+.stage-h input.title:hover { border-color: var(--line-2); }
+.stage-h input.icon { width: 46px; text-align: center; font-size: 18px; border-color: transparent; background: none; }
+.seg { display: inline-flex; background: var(--line); border-radius: 9px; padding: 2px; }
+.seg button { border: 0; background: none; padding: 4px 12px; border-radius: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-2); }
+.seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.phone { background: #000; border-radius: 28px; padding: 12px; box-shadow: 0 0 0 1px #2c2c2e, 0 0 0 7px #121214, 0 0 0 8px #2c2c2e, 0 24px 60px rgba(0,0,0,.35); }
+.canvas { position: relative; aspect-ratio: 2 / 1; background: var(--canvas); border-radius: 16px; overflow: hidden; touch-action: none; }
+.canvas .grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(6, 1fr); gap: 6px; padding: 6px; pointer-events: none; }
+.canvas .grid i { background: var(--cell); border-radius: 6px; }
+.box { position: absolute; border-radius: 12px; background: linear-gradient(180deg, #1f1f22, #161618); border: 1px solid rgba(255,255,255,.1); color: #f5f5f7; padding: 8px 10px; overflow: hidden; cursor: grab; user-select: none;
+  transition: left .25s var(--ease), top .25s var(--ease), width .25s var(--ease), height .25s var(--ease), box-shadow .2s, border-color .2s; }
+.box.dragging { transition: none; cursor: grabbing; z-index: 5; box-shadow: 0 16px 40px rgba(0,0,0,.55); }
+.box.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.box.bad { border-color: #ff453a; box-shadow: 0 0 0 2px #ff453a; }
+.box .bi { font-size: 18px; line-height: 1; }
+.box .bn { font-size: 12.5px; font-weight: 600; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.box .bs { font: 10.5px var(--mono); color: rgba(235,235,245,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.box .rz { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; }
+.box .rz::after { content: ""; position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-right: 2px solid rgba(255,255,255,.4); border-bottom: 2px solid rgba(255,255,255,.4); border-radius: 0 0 2px 0; }
+.box.shake { animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.ghost { position: absolute; border-radius: 12px; border: 2px dashed var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; display: none; }
+.ghost.bad { border-color: #ff453a; background: rgba(255,69,58,.12); }
+iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16px; background: #000; display: block; }
+.hint { font: 12px var(--mono); color: var(--text-3); margin-top: 12px; }
+
+.side-r { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px; max-height: calc(100vh - 32px); }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.panel > header { padding: 10px 14px; font-weight: 600; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.panel > header .x { margin-left: auto; }
+.palette { overflow: auto; padding: 8px; max-height: 44vh; }
+.palette input.search { width: 100%; margin-bottom: 8px; }
+.cat { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); padding: 10px 6px 4px; }
+.pw { display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px 8px; border: 0; border-radius: 8px; background: none; text-align: left; transition: background .12s; }
+.pw:hover { background: var(--line); }
+.pw .e { width: 22px; text-align: center; font-size: 16px; }
+.pw b { font-weight: 500; display: block; }
+.pw small { display: block; color: var(--text-3); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+.insp { padding: 12px 14px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.insp .f label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.insp .f input[type=text], .insp .f input[type=number], .insp .f select, .insp .f textarea { width: 100%; }
+.insp .f.inline { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.insp .f.inline label { margin: 0; color: var(--text); font-size: 13px; }
+.insp .desc { color: var(--text-2); font-size: 12.5px; }
+.insp .geo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.insp .geo input { width: 100%; text-align: center; }
+.insp .geo span { display: block; font: 10.5px var(--mono); color: var(--text-3); text-align: center; }
+.cards .cd { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 8px; background: var(--card-2); margin-bottom: 4px; }
+.cards .cd span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- lists (shortcuts, rules) ---------- */
+.cardlist { display: flex; flex-direction: column; gap: 10px; }
+.sc { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 12px 14px; display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: start; animation: in .35s var(--ease); }
+.sc .face { width: 54px; height: 54px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.2); }
+.sc .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.sc .fields .wide { grid-column: 1 / -1; }
+.sc .fields label { font-size: 11.5px; color: var(--text-2); display: block; margin-bottom: 3px; }
+.sc .fields input, .sc .fields select, .sc .fields textarea { width: 100%; }
+.sc .acts { display: flex; flex-direction: column; gap: 6px; }
+.sc input[type=color] { width: 100%; height: 31px; border: 1px solid var(--line-2); border-radius: 8px; padding: 2px; background: var(--card-2); }
+.tpl { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.tp { text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); transition: transform .25s var(--spring), border-color .15s; }
+.tp:hover { transform: translateY(-2px); border-color: var(--accent); }
+.tp .e { font-size: 24px; }
+.tp b { display: block; margin-top: 6px; }
+.tp small { color: var(--text-2); }
+.mini { margin-top: 10px; aspect-ratio: 2/1; background: #0b0b0c; border-radius: 8px; position: relative; overflow: hidden; }
+.mini i { position: absolute; background: #2c2c2e; border-radius: 3px; border: 1px solid rgba(255,255,255,.06); }
+
+/* ---------- save bar, modal, toast ---------- */
+#savebar { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 150%); z-index: 50; background: rgba(28,28,30,.92); color: #f5f5f7; border-radius: 99px; padding: 8px 8px 8px 20px; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 16px 50px rgba(0,0,0,.35); transition: transform .5s var(--spring); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+#savebar.show { transform: translate(-50%, 0); }
+#savebar .btn { background: rgba(255,255,255,.12); border-color: transparent; color: #fff; border-radius: 99px; padding: 7px 16px; }
+#savebar .btn.primary { background: var(--accent); }
+#savebar .err { color: #ff6961; font-size: 13px; max-width: 420px; }
+#modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: grid; place-items: center; z-index: 60; opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); }
+#modal.show { opacity: 1; pointer-events: auto; }
+#modal .box2 { background: var(--bg); border-radius: 18px; padding: 22px; width: min(920px, 92vw); max-height: 86vh; overflow: auto; box-shadow: 0 30px 80px rgba(0,0,0,.4); transform: scale(.96); transition: transform .4s var(--ease); }
+#modal.show .box2 { transform: none; }
+#toast { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -160%); z-index: 70; background: #1d1d1f; color: #fff; padding: 10px 18px; border-radius: 99px; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: transform .5s var(--spring); }
+#toast.show { transform: translate(-50%, 0); }
+#toast.err { background: #d70015; }
+.geo-r { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.geo-r button { text-align: left; border: 0; background: var(--card-2); border-radius: 8px; padding: 6px 10px; }
+.geo-r button:hover { background: var(--line); }
+.swatches { display: flex; gap: 8px; }
+.swatches button { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); transition: transform .2s var(--spring); }
+.swatches button.on { border-color: var(--text); transform: scale(1.12); }
+
+@media (max-width: 1180px) { .ed { grid-template-columns: 1fr; } .side-r { position: static; max-height: none; } .plist { flex-direction: row; flex-wrap: wrap; } .pg { width: auto; } }
+@media (max-width: 760px) { #app { grid-template-columns: 1fr; } aside { flex-direction: row; overflow-x: auto; padding: 8px; } aside .foot, .brand span { display: none; } .view { padding: 18px 16px 120px; } .nav span { display: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="brand"><div class="lg">K</div><div><b>KONGBOX</b><span id="ver">agent</span></div></div>
+    <button class="nav on" data-v="pages"><i>▦</i><span>Páginas</span></button>
+    <button class="nav" data-v="shortcuts"><i>⌘</i><span>Atalhos</span></button>
+    <button class="nav" data-v="rules"><i>⚡</i><span>Regras</span></button>
+    <button class="nav" data-v="webhooks"><i>⇄</i><span>Webhooks</span></button>
+    <button class="nav" data-v="phone"><i>▯</i><span>Celular</span></button>
+    <button class="nav" data-v="general"><i>⚙</i><span>Geral</span></button>
+    <button class="nav" data-v="advanced"><i>{}</i><span>Avançado</span></button>
+    <div class="foot" id="foot">conectando…</div>
+  </aside>
+  <main>
+    <!-- PAGES -->
+    <section class="view on" id="v-pages">
+      <h1>Páginas</h1>
+      <p class="lead">Cada página é uma grade 12 × 6. Arraste para mover, puxe o canto para redimensionar.</p>
+      <div class="ed">
+        <div>
+          <div class="plist" id="plist"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn sm" id="addPage">＋ Página</button>
+            <button class="btn sm" id="importPage">Importar</button>
+            <input type="file" id="importFile" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <div>
+          <div class="stage-h">
+            <input class="icon" id="pIcon" maxlength="4" title="Ícone">
+            <input class="title" id="pTitle" title="Título">
+            <label class="row dim" style="gap:6px;font-size:13px"><span class="sw"><input type="checkbox" id="pEnabled"><span></span></span>visível</label>
+            <span style="flex:1"></span>
+            <div class="seg" id="mode"><button data-m="edit" class="on">Editar</button><button data-m="live">Preview ao vivo</button></div>
+          </div>
+          <div class="phone">
+            <div class="canvas" id="canvas"><div class="grid" id="gridBg"></div><div class="ghost" id="ghost"></div></div>
+            <iframe class="preview" id="preview" hidden title="Preview"></iframe>
+          </div>
+          <div class="row" style="margin-top:14px;justify-content:space-between">
+            <div class="row">
+              <button class="btn sm" id="pUp">↑ Mover</button><button class="btn sm" id="pDown">↓ Mover</button>
+              <button class="btn sm" id="pDup">Duplicar</button><button class="btn sm" id="pExport">Exportar</button>
+              <button class="btn sm danger" id="pDel">Excluir página</button>
+            </div>
+            <span class="hint" id="pInfo"></span>
+          </div>
+          <div class="hint">// dica: Delete remove o widget selecionado · setas movem · Shift+setas redimensionam</div>
+        </div>
+        <div class="side-r">
+          <div class="panel" id="inspPanel"><header><span id="inspTitle">Widget</span><button class="btn sm ghost x" id="inspClose" title="Fechar">✕</button></header><div class="insp" id="insp"></div></div>
+          <div class="panel"><header>Widgets <span class="chip" id="wcount"></span></header><div class="palette"><input class="search" type="text" id="search" placeholder="Buscar widget…"><div id="palette"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHORTCUTS -->
+    <section class="view" id="v-shortcuts">
+      <h1>Atalhos</h1>
+      <p class="lead">O celular só envia o id; o comando fica neste PC. Um atalho abre um programa ou URL, aperta teclas, digita texto ou roda uma macro.</p>
+      <div class="cardlist" id="scList"></div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="scAdd">＋ Novo atalho</button></div>
+    </section>
+
+    <!-- RULES -->
+    <section class="view" id="v-rules">
+      <h1>Regras</h1>
+      <p class="lead">Quando algo acontece no PC, o KONGBOX reage: notifica, troca de página, roda um atalho ou grava um valor.</p>
+      <div class="cardlist" id="ruList"></div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="ruAdd">＋ Nova regra</button></div>
+    </section>
+
+    <!-- WEBHOOKS -->
+    <section class="view" id="v-webhooks">
+      <h1>Webhooks</h1>
+      <p class="lead">Qualquer coisa que faz uma requisição HTTP pode colocar dados no painel. Deste PC não precisa de chave.</p>
+      <h2>Exemplos</h2>
+      <div class="group" style="padding:14px" id="whEx"></div>
+      <h2>Testar</h2>
+      <div class="group"><div class="item"><div class="lbl">Notificação de teste<small>aparece no topo do celular, estilo Dynamic Island</small></div><button class="btn" id="whNotify">Enviar</button></div>
+        <div class="item"><div class="lbl">Valor de teste <code>build = passed</code></div><button class="btn" id="whPush">Enviar</button></div>
+        <div class="item"><div class="lbl">Recarregar o painel do celular</div><button class="btn" id="whReload">Recarregar</button></div></div>
+      <h2>Valores atuais</h2>
+      <div class="group" id="whValues"></div>
+    </section>
+
+    <!-- PHONE -->
+    <section class="view" id="v-phone">
+      <h1>Celular</h1>
+      <p class="lead">Ligue o celular via USB com a depuração USB ativa. O agente mantém <code>adb reverse tcp:8765</code> sozinho.</p>
+      <div class="group" id="phones"></div>
+      <h2>Ferramentas</h2>
+      <div class="group" id="phoneInfo"></div>
+    </section>
+
+    <!-- GENERAL -->
+    <section class="view" id="v-general">
+      <h1>Geral</h1>
+      <p class="lead">Clima, aparência, tela, IA e integrações.</p>
+      <h2>Clima</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Cidade<small id="geoNow"></small><div class="geo-r" id="geoRes"></div></div><input type="text" id="geoQ" placeholder="Buscar cidade…"></div>
+      </div>
+      <h2>Aparência</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Estilo dos cards</div><div class="seg" id="apPreset"><button data-p="glass">Vidro</button><button data-p="flat">Plano</button><button data-p="seamless">Sem borda</button></div></div>
+        <div class="item"><div class="lbl">Cor de destaque</div><div class="swatches" id="apAccent"></div></div>
+        <div class="item"><div class="lbl">Arredondamento<small>px</small></div><input type="number" min="0" max="40" data-k="appearance.radius"></div>
+        <div class="item"><div class="lbl">Espaçamento<small>px</small></div><input type="number" min="0" max="30" data-k="appearance.gap"></div>
+      </div>
+      <h2>Tela</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Segundos no relógio</div><label class="sw"><input type="checkbox" data-k="display.showSeconds"><span></span></label></div>
+        <div class="item"><div class="lbl">Formato 24 h</div><label class="sw"><input type="checkbox" data-k="display.hour24"><span></span></label></div>
+        <div class="item"><div class="lbl">Voltar à primeira página após<small>segundos sem toque (0 = nunca)</small></div><input type="number" min="0" data-k="display.idleReturnSec"></div>
+        <div class="item"><div class="lbl">Vibrar</div><label class="sw"><input type="checkbox" data-k="display.vibrate"><span></span></label></div>
+        <div class="item"><div class="lbl">Trocar página com as teclas de volume</div><label class="sw"><input type="checkbox" data-k="display.volumeKeys"><span></span></label></div>
+        <div class="item"><div class="lbl">Proteção contra burn-in (OLED)<small>move o painel alguns pixels a cada 2 minutos</small></div><label class="sw"><input type="checkbox" data-k="display.pixelShift"><span></span></label></div>
+        <div class="item"><div class="lbl">Orientação</div><select data-k="display.orientation"><option value="auto">Seguir o celular</option><option value="landscape">Paisagem</option><option value="portrait">Retrato</option></select></div>
+      </div>
+      <h2>Modo noturno</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Ligado<small>tela escurece e só fica um relógio; toque acorda por 30 s</small></div><label class="sw"><input type="checkbox" data-k="night.enabled"><span></span></label></div>
+        <div class="item"><div class="lbl">Das</div><input type="time" data-k="night.start"></div>
+        <div class="item"><div class="lbl">Até</div><input type="time" data-k="night.end"></div>
+      </div>
+      <h2>IA</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Cotas do Claude<small>usa o token do Claude Code deste PC para ler o seu próprio uso em api.anthropic.com</small></div><label class="sw"><input type="checkbox" data-k="quotas.claude"><span></span></label></div>
+        <div class="item"><div class="lbl">Cotas do Codex<small>lidas dos logs locais do Codex, nada sai do PC</small></div><label class="sw"><input type="checkbox" data-k="quotas.codex"><span></span></label></div>
+        <div class="item"><div class="lbl">Prompts de permissão do Claude Code no celular<small>Permitir / Negar pelo painel; sem resposta, o terminal pergunta como sempre</small></div><label class="sw"><input type="checkbox" data-k="claudeHook.enabled"><span></span></label></div>
+        <div class="item"><div class="lbl">Hook em <code>~/.claude/settings.json</code><small id="hookState">verificando…</small></div><button class="btn" id="hookBtn">Instalar hook</button></div>
+      </div>
+      <h2>GitHub</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Repositórios<small>um por linha, formato dono/nome</small></div><textarea id="ghRepos" rows="3" style="width:260px"></textarea></div>
+        <div class="item"><div class="lbl">Token<small>opcional: repositórios privados e limite maior</small></div><input type="password" data-k="github.token" autocomplete="off"></div>
+      </div>
+      <h2>Sistema</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Iniciar com o Windows</div><label class="sw"><input type="checkbox" id="autostart"><span></span></label></div>
+        <div class="item"><div class="lbl">Alvo do ping</div><input type="text" data-k="ping.host"></div>
+      </div>
+    </section>
+
+    <!-- ADVANCED -->
+    <section class="view" id="v-advanced">
+      <h1>Avançado</h1>
+      <p class="lead">O <code>config.json</code> inteiro. Edite com cuidado: é validado antes de salvar.</p>
+      <textarea id="raw" rows="30" spellcheck="false"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="rawApply">Aplicar ao rascunho</button><span class="dim" id="rawMsg"></span></div>
+    </section>
+  </main>
+</div>
+
+<div id="savebar"><span id="saveMsg">Alterações não salvas</span><span class="err" id="saveErr"></span><button class="btn" id="discard">Descartar</button><button class="btn primary" id="save">Salvar</button></div>
+<div id="modal"><div class="box2" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+
+  var saved = null, draft = null, catalog = [], templates = [], byType = {};
+  var pageIdx = 0, selId = null, cardIdx = null, mode = 'edit';
+
+  function api(path, opts) {
+    opts = opts || {};
+    var init = { method: opts.method || 'GET', headers: {} };
+    if (init.method !== 'GET') init.headers['X-Kong'] = '1';
+    if (opts.body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(opts.body); }
+    return fetch(path, init).then(function (r) {
+      return r.text().then(function (t) { var d = null; try { d = JSON.parse(t); } catch (e) { d = t; } return { ok: r.ok, data: d }; });
+    }).catch(function () { return { ok: false, data: { error: 'agente offline' } }; });
+  }
+
+  var toastT = 0;
+  function toast(msg, err) {
+    var t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+    clearTimeout(toastT); toastT = setTimeout(function () { t.className = err ? 'err' : ''; }, 2600);
+  }
+
+  // ---------- draft & save bar ----------
+  function dirty() { return JSON.stringify(saved) !== JSON.stringify(draft); }
+  var pushT = 0;
+  function changed(opts) {
+    opts = opts || {};
+    $('#savebar').classList.toggle('show', dirty());
+    $('#saveErr').textContent = '';
+    if (!opts.keepRaw) $('#raw').value = JSON.stringify(draft, null, 2);
+    clearTimeout(pushT); pushT = setTimeout(pushPreview, 250);
+  }
+  $('#discard').addEventListener('click', function () { draft = clone(saved); selId = null; renderAll(); changed(); });
+  $('#save').addEventListener('click', save);
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); if (dirty()) save(); }
+  });
+  function save() {
+    api('/api/settings', { method: 'PUT', body: draft }).then(function (r) {
+      if (!r.ok) { $('#saveErr').textContent = (r.data && r.data.error) || 'Falha ao salvar.'; return; }
+      return api('/api/settings').then(function (s) {
+        saved = s.data; draft = clone(saved);
+        renderAll(); changed(); toast('Salvo. O celular atualiza em instantes.');
+      });
+    });
+  }
+  window.addEventListener('beforeunload', function (e) { if (draft && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- navigation ----------
+  $$('.nav').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('.nav').forEach(function (x) { x.classList.toggle('on', x === b); });
+      $$('.view').forEach(function (v) { v.classList.toggle('on', v.id === 'v-' + b.dataset.v); });
+      if (b.dataset.v === 'phone') loadPhones();
+      if (b.dataset.v === 'webhooks') loadWebhooks();
+      if (b.dataset.v === 'advanced') $('#raw').value = JSON.stringify(draft, null, 2);
+    });
+  });
+
+  // ---------- helpers on draft ----------
+  function pages() { return draft.pages || (draft.pages = []); }
+  function page() { return pages()[pageIdx]; }
+  function widget() { var p = page(); return p && (p.widgets || []).filter(function (w) { return w.id === selId; })[0]; }
+  function newId(list, base) { var n = 1; while (list.some(function (x) { return x.id === base + n; })) n++; return base + n; }
+  function get(path) { return path.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, draft); }
+  function set(path, v) {
+    var ks = path.split('.'), o = draft;
+    ks.slice(0, -1).forEach(function (k) { if (typeof o[k] !== 'object' || o[k] === null) o[k] = {}; o = o[k]; });
+    o[ks[ks.length - 1]] = v;
+  }
+
+  // ---------- pages list ----------
+  var dragPage = null;
+  function renderPages() {
+    var list = $('#plist');
+    list.innerHTML = '';
+    pages().forEach(function (p, i) {
+      var b = document.createElement('button');
+      b.className = 'pg' + (i === pageIdx ? ' on' : '') + (p.enabled === false ? ' off' : '');
+      b.draggable = true;
+      b.innerHTML = '<span class="e">' + esc(p.icon || '▢') + '</span><span class="t">' + esc(p.title || p.id) + '</span><span class="n">' + (p.widgets || []).length + '</span>';
+      b.addEventListener('click', function () { pageIdx = i; selId = null; cardIdx = null; renderAll(); pushPreview(); });
+      b.addEventListener('dragstart', function () { dragPage = i; });
+      b.addEventListener('dragover', function (e) { e.preventDefault(); b.classList.add('drop'); });
+      b.addEventListener('dragleave', function () { b.classList.remove('drop'); });
+      b.addEventListener('drop', function (e) {
+        e.preventDefault(); b.classList.remove('drop');
+        if (dragPage == null || dragPage === i) return;
+        var moved = pages().splice(dragPage, 1)[0];
+        pages().splice(i, 0, moved);
+        pageIdx = i; dragPage = null; renderAll(); changed();
+      });
+      list.appendChild(b);
+    });
+    var p = page();
+    $('#pTitle').value = p ? p.title || '' : '';
+    $('#pIcon').value = p ? p.icon || '' : '';
+    $('#pEnabled').checked = p ? p.enabled !== false : false;
+    $('#pInfo').textContent = p ? 'id: ' + p.id + ' · ' + (p.widgets || []).length + ' widgets' : 'sem páginas';
+  }
+  $('#pTitle').addEventListener('input', function () { if (page()) { page().title = this.value; renderPages(); changed(); } });
+  $('#pIcon').addEventListener('input', function () { if (page()) { page().icon = this.value; renderPages(); changed(); } });
+  $('#pEnabled').addEventListener('change', function () { if (page()) { page().enabled = this.checked; renderPages(); changed(); } });
+  $('#pUp').addEventListener('click', function () { movePage(-1); });
+  $('#pDown').addEventListener('click', function () { movePage(1); });
+  function movePage(d) {
+    var j = pageIdx + d; if (j < 0 || j >= pages().length) return;
+    var p = pages().splice(pageIdx, 1)[0]; pages().splice(j, 0, p); pageIdx = j; renderAll(); changed();
+  }
+  $('#pDel').addEventListener('click', function () {
+    var p = page(); if (!p) return;
+    if (!confirm('Excluir a página "' + (p.title || p.id) + '"?')) return;
+    pages().splice(pageIdx, 1); pageIdx = Math.max(0, pageIdx - 1); selId = null; renderAll(); changed();
+  });
+  $('#pDup').addEventListener('click', function () {
+    var p = page(); if (!p) return;
+    var c = clone(p); c.id = uniquePageId(p.id); c.title = (p.title || p.id) + ' cópia';
+    pages().splice(pageIdx + 1, 0, c); pageIdx++; renderAll(); changed();
+  });
+  $('#pExport').addEventListener('click', function () {
+    var p = page(); if (!p) return;
+    var blob = new Blob([JSON.stringify({ kongboxPage: 1, page: p }, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'kongbox-' + p.id + '.json'; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  $('#importPage').addEventListener('click', function () { $('#importFile').click(); });
+  $('#importFile').addEventListener('change', function () {
+    var f = this.files[0]; if (!f) return;
+    f.text().then(function (t) {
+      var d; try { d = JSON.parse(t); } catch (e) { toast('Arquivo inválido.', true); return; }
+      var p = d.page || d;
+      if (!p || !Array.isArray(p.widgets)) { toast('Não é uma página do KONGBOX.', true); return; }
+      p.id = uniquePageId(p.id || 'pagina');
+      pages().push(p); pageIdx = pages().length - 1; renderAll(); changed(); toast('Página importada.');
+    });
+    this.value = '';
+  });
+  function uniquePageId(base) {
+    base = String(base || 'pagina').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '') || 'pagina';
+    var id = base, n = 2;
+    while (pages().some(function (p) { return p.id === id; })) id = base + '-' + n++;
+    return id;
+  }
+
+  // ---------- templates modal ----------
+  function miniLayout(ws) {
+    return '<div class="mini">' + (ws || []).map(function (w) {
+      return '<i style="left:' + (w.x / 12 * 100) + '%;top:' + (w.y / 6 * 100) + '%;width:calc(' + (w.w / 12 * 100) + '% - 3px);height:calc(' + (w.h / 6 * 100) + '% - 3px)"></i>';
+    }).join('') + '</div>';
+  }
+  $('#addPage').addEventListener('click', function () {
+    var box = $('#modalBox');
+    box.innerHTML = '<h1>Nova página</h1><p class="lead">Comece de um template ou do zero. Dá para mudar tudo depois.</p><div class="tpl"><button class="tp" data-t=""><div class="e">＋</div><b>Em branco</b><small>Uma grade vazia</small>' + miniLayout([]) + '</button>' +
+      templates.map(function (t) { return '<button class="tp" data-t="' + esc(t.id) + '"><div class="e">' + esc(t.icon) + '</div><b>' + esc(t.title) + '</b><small>' + esc(t.desc) + '</small>' + miniLayout(t.widgets) + '</button>'; }).join('') + '</div>';
+    $('#modal').classList.add('show');
+    $$('.tp', box).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var t = templates.filter(function (x) { return x.id === b.dataset.t; })[0];
+        var p = t ? { id: uniquePageId(t.id), title: t.title, icon: t.icon, enabled: true, widgets: clone(t.widgets) } : { id: uniquePageId('pagina'), title: 'Nova página', icon: '▢', enabled: true, widgets: [] };
+        p.widgets.forEach(function (w, i) { w.id = 'w' + (i + 1); });
+        pages().push(p); pageIdx = pages().length - 1; selId = null;
+        $('#modal').classList.remove('show'); renderAll(); changed();
+      });
+    });
+  });
+  $('#modal').addEventListener('click', function (e) { if (e.target.id === 'modal') this.classList.remove('show'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if ($('#modal').classList.contains('show')) { $('#modal').classList.remove('show'); return; }
+    if (cardIdx != null) { cardIdx = null; renderInspector(); return; }
+    if (selId) { selId = null; renderCanvas(); renderInspector(); }
+  });
+
+  // ---------- canvas ----------
+  var canvas = $('#canvas'), ghost = $('#ghost');
+  (function () { var g = $('#gridBg'); for (var i = 0; i < 72; i++) g.appendChild(document.createElement('i')); })();
+  function cellRect() {
+    var r = canvas.getBoundingClientRect(), pad = 6, gap = 6;
+    return { r: r, cw: (r.width - pad * 2 - gap * 11) / 12, ch: (r.height - pad * 2 - gap * 5) / 6, pad: pad, gap: gap };
+  }
+  function boxStyle(el, w) {
+    var c = cellRect();
+    el.style.left = (c.pad + w.x * (c.cw + c.gap)) + 'px';
+    el.style.top = (c.pad + w.y * (c.ch + c.gap)) + 'px';
+    el.style.width = (w.w * c.cw + (w.w - 1) * c.gap) + 'px';
+    el.style.height = (w.h * c.ch + (w.h - 1) * c.gap) + 'px';
+  }
+  function overlaps(a, list, ignoreId) {
+    return list.some(function (b) {
+      return b.id !== ignoreId && a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    });
+  }
+  function summary(w) {
+    var o = w.options || {}, d = byType[w.type];
+    if (w.type === 'stack') return ((o.cards || []).length) + ' cards';
+    if (o.metric) return o.metric;
+    if (o.metrics) return o.metrics;
+    if (o.key) return 'chave ' + o.key;
+    if (o.id) return o.id;
+    if (o.providers) return o.providers;
+    return d ? d.category.toLowerCase() : '';
+  }
+  function renderCanvas() {
+    $$('.box', canvas).forEach(function (b) { b.remove(); });
+    var p = page(); if (!p) return;
+    (p.widgets || []).forEach(function (w) {
+      var d = byType[w.type] || { icon: '?', name: w.type };
+      var el = document.createElement('div');
+      el.className = 'box' + (w.id === selId ? ' sel' : '');
+      el.dataset.id = w.id;
+      el.innerHTML = '<div class="bi">' + esc(d.icon) + '</div><div class="bn">' + esc(d.name) + '</div><div class="bs">' + w.w + '×' + w.h + ' · ' + esc(summary(w)) + '</div><div class="rz"></div>';
+      boxStyle(el, w);
+      canvas.appendChild(el);
+    });
+  }
+  // boxes are placed in pixels, so redraw whenever the canvas itself changes size (layout, sidebar, window)
+  if (window.ResizeObserver) new ResizeObserver(function () { if (!drag) renderCanvas(); }).observe(canvas);
+  else window.addEventListener('resize', function () { renderCanvas(); });
+
+  var drag = null;
+  canvas.addEventListener('pointerdown', function (e) {
+    var box = e.target.closest('.box');
+    if (!box) { selId = null; cardIdx = null; renderCanvas(); renderInspector(); return; }
+    var w = (page().widgets || []).filter(function (x) { return x.id === box.dataset.id; })[0];
+    if (!w) return;
+    if (selId !== w.id) { selId = w.id; cardIdx = null; renderInspector(); }
+    $$('.box', canvas).forEach(function (b) { b.classList.toggle('sel', b === box); });
+    drag = { box: box, w: w, resize: e.target.classList.contains('rz'), sx: e.clientX, sy: e.clientY, orig: { x: w.x, y: w.y, w: w.w, h: w.h }, next: null };
+    try { box.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone (cancelled touch) */ }
+    box.classList.add('dragging');
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var c = cellRect(), d = byType[drag.w.type] || { minW: 1, minH: 1 };
+    var dx = Math.round((e.clientX - drag.sx) / (c.cw + c.gap)), dy = Math.round((e.clientY - drag.sy) / (c.ch + c.gap));
+    var o = drag.orig, n;
+    if (drag.resize) {
+      n = { x: o.x, y: o.y, w: Math.max(d.minW || 1, Math.min(12 - o.x, o.w + dx)), h: Math.max(d.minH || 1, Math.min(6 - o.y, o.h + dy)) };
+      drag.box.style.width = Math.max(30, o.w * c.cw + (o.w - 1) * c.gap + (e.clientX - drag.sx)) + 'px';
+      drag.box.style.height = Math.max(30, o.h * c.ch + (o.h - 1) * c.gap + (e.clientY - drag.sy)) + 'px';
+    } else {
+      n = { x: Math.max(0, Math.min(12 - o.w, o.x + dx)), y: Math.max(0, Math.min(6 - o.h, o.y + dy)), w: o.w, h: o.h };
+      drag.box.style.left = (c.pad + o.x * (c.cw + c.gap) + (e.clientX - drag.sx)) + 'px';
+      drag.box.style.top = (c.pad + o.y * (c.ch + c.gap) + (e.clientY - drag.sy)) + 'px';
+    }
+    drag.next = n;
+    var bad = overlaps(n, page().widgets, drag.w.id);
+    ghost.style.display = 'block';
+    ghost.classList.toggle('bad', bad);
+    boxStyle(ghost, n);
+  });
+  function endDrag() {
+    if (!drag) return;
+    var d = drag; drag = null;
+    ghost.style.display = 'none';
+    d.box.classList.remove('dragging');
+    var n = d.next;
+    if (n && (n.x !== d.orig.x || n.y !== d.orig.y || n.w !== d.orig.w || n.h !== d.orig.h)) {
+      if (overlaps(n, page().widgets, d.w.id)) {
+        boxStyle(d.box, d.w); d.box.classList.add('shake'); setTimeout(function () { d.box.classList.remove('shake'); }, 450);
+        return;
+      }
+      d.w.x = n.x; d.w.y = n.y; d.w.w = n.w; d.w.h = n.h;
+      changed(); renderCanvas(); renderInspector();
+    } else boxStyle(d.box, d.w);
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  document.addEventListener('keydown', function (e) {
+    if (!selId || mode !== 'edit' || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+    var w = widget(); if (!w) return;
+    var d = byType[w.type] || {};
+    var n = { x: w.x, y: w.y, w: w.w, h: w.h };
+    if (e.key === 'Delete' || e.key === 'Backspace') { removeWidget(); e.preventDefault(); return; }
+    var map = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!map) return;
+    e.preventDefault();
+    if (e.shiftKey) { n.w = Math.max(d.minW || 1, Math.min(12 - n.x, n.w + map[0])); n.h = Math.max(d.minH || 1, Math.min(6 - n.y, n.h + map[1])); }
+    else { n.x = Math.max(0, Math.min(12 - n.w, n.x + map[0])); n.y = Math.max(0, Math.min(6 - n.h, n.y + map[1])); }
+    if (overlaps(n, page().widgets, w.id)) return;
+    w.x = n.x; w.y = n.y; w.w = n.w; w.h = n.h;
+    changed(); renderCanvas(); renderInspector();
+  });
+
+  // ---------- palette ----------
+  function renderPalette() {
+    var q = $('#search').value.trim().toLowerCase();
+    var cats = {};
+    catalog.forEach(function (d) {
+      if (q && (d.name + ' ' + d.desc + ' ' + d.type + ' ' + d.category).toLowerCase().indexOf(q) < 0) return;
+      (cats[d.category] = cats[d.category] || []).push(d);
+    });
+    $('#palette').innerHTML = Object.keys(cats).map(function (c) {
+      return '<div class="cat">' + esc(c) + '</div>' + cats[c].map(function (d) {
+        return '<button class="pw" data-t="' + esc(d.type) + '" title="' + esc(d.desc) + '"><span class="e">' + esc(d.icon) + '</span><span><b>' + esc(d.name) + '</b><small>' + esc(d.desc) + '</small></span></button>';
+      }).join('');
+    }).join('') || '<div class="faint" style="padding:10px">Nada encontrado.</div>';
+    $('#wcount').textContent = catalog.length;
+  }
+  $('#search').addEventListener('input', renderPalette);
+  $('#palette').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    var d = byType[b.dataset.t], p = page();
+    if (!p) { toast('Crie uma página primeiro.', true); return; }
+    // add into the selected Smart Stack, if there is one
+    var sel = widget();
+    if (sel && sel.type === 'stack' && d.type !== 'stack') {
+      var o = sel.options = sel.options || {}; o.cards = o.cards || [];
+      if (o.cards.length >= 12) { toast('Um Smart Stack guarda até 12 widgets.', true); return; }
+      o.cards.push({ type: d.type, options: defaults(d) });
+      changed(); renderCanvas(); renderInspector(); toast(d.name + ' entrou no Smart Stack.');
+      return;
+    }
+    var spot = findSpot(p.widgets || [], d);
+    if (!spot) { toast('Sem espaço livre nesta página.', true); return; }
+    p.widgets = p.widgets || [];
+    var w = { id: newId(p.widgets, 'w'), type: d.type, x: spot.x, y: spot.y, w: spot.w, h: spot.h, options: defaults(d) };
+    p.widgets.push(w); selId = w.id; cardIdx = null;
+    changed(); renderAll();
+  });
+  function defaults(d) {
+    var o = {};
+    (d.options || []).forEach(function (op) { if (op['default'] !== undefined) o[op.key] = clone(op['default']); });
+    if (d.type === 'stack') o.cards = [];
+    return o;
+  }
+  function findSpot(list, d) {
+    for (var w = d.w; w >= (d.minW || 1); w--) for (var h = d.h; h >= (d.minH || 1); h--)
+      for (var y = 0; y + h <= 6; y++) for (var x = 0; x + w <= 12; x++)
+        if (!overlaps({ x: x, y: y, w: w, h: h }, list, null)) return { x: x, y: y, w: w, h: h };
+    return null;
+  }
+  function removeWidget() {
+    var p = page(); if (!p) return;
+    p.widgets = p.widgets.filter(function (w) { return w.id !== selId; });
+    selId = null; changed(); renderAll();
+  }
+
+  // ---------- inspector ----------
+  var METRICS = [['cpu', 'CPU'], ['gpu', 'GPU'], ['ram', 'Memória'], ['vram', 'VRAM'], ['disk', 'Disco mais cheio'], ['down', 'Download'], ['up', 'Upload'], ['ping', 'Ping'], ['gputemp', 'Temperatura da GPU']];
+  function field(op, val, onChange) {
+    var id = 'f' + Math.random().toString(36).slice(2, 8), html, wrap = document.createElement('div');
+    wrap.className = 'f' + (op.type === 'bool' ? ' inline' : '');
+    if (op.type === 'bool') html = '<label for="' + id + '">' + esc(op.label) + '</label><span class="sw"><input type="checkbox" id="' + id + '"' + (val ? ' checked' : '') + '><span></span></span>';
+    else if (op.type === 'textarea') html = '<label for="' + id + '">' + esc(op.label) + '</label><textarea id="' + id + '" rows="6">' + esc(val) + '</textarea>';
+    else if (op.type === 'list') html = '<label for="' + id + '">' + esc(op.label) + '</label><textarea id="' + id + '" rows="5">' + esc((Array.isArray(val) ? val : String(val || '').split(',')).join('\n')) + '</textarea>';
+    else if (op.type === 'number') html = '<label for="' + id + '">' + esc(op.label) + '</label><input type="number" id="' + id + '" value="' + esc(val) + '">';
+    else if (op.type === 'select' || op.type === 'metric' || op.type === 'shortcut') {
+      var ch = op.type === 'metric' ? METRICS : op.type === 'shortcut' ? (draft.shortcuts || []).map(function (s) { return [s.id, (s.icon || '') + ' ' + (s.label || s.id)]; }) : op.choices;
+      html = '<label for="' + id + '">' + esc(op.label) + '</label><select id="' + id + '">' + ch.map(function (c) { return '<option value="' + esc(c[0]) + '"' + (String(c[0]) === String(val) ? ' selected' : '') + '>' + esc(c[1]) + '</option>'; }).join('') + '</select>';
+    } else html = '<label for="' + id + '">' + esc(op.label) + '</label><input type="text" id="' + id + '" value="' + esc(val) + '">';
+    wrap.innerHTML = html;
+    var input = wrap.querySelector('#' + id);
+    input.addEventListener(op.type === 'bool' || input.tagName === 'SELECT' ? 'change' : 'input', function () {
+      var v = op.type === 'bool' ? input.checked : op.type === 'number' ? (input.value === '' ? '' : +input.value) : op.type === 'list' ? input.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) : input.value;
+      onChange(v);
+    });
+    return wrap;
+  }
+  function renderInspector() {
+    var box = $('#insp'), w = widget();
+    $('#inspPanel').style.display = w ? '' : 'none';
+    if (!w) return;
+    var d = byType[w.type] || { name: w.type, options: [] };
+    box.innerHTML = '';
+    // editing a card inside a Smart Stack
+    if (w.type === 'stack' && cardIdx != null && w.options && w.options.cards && w.options.cards[cardIdx]) {
+      var card = w.options.cards[cardIdx], cd = byType[card.type] || { name: card.type, options: [] };
+      $('#inspTitle').textContent = cd.icon + ' ' + cd.name + ' (no stack)';
+      var back = document.createElement('button'); back.className = 'btn sm'; back.textContent = '← Voltar ao Smart Stack';
+      back.addEventListener('click', function () { cardIdx = null; renderInspector(); });
+      box.appendChild(back);
+      // read without creating "options": just looking at a card must not dirty the draft
+      var copts = card.options || {};
+      (cd.options || []).forEach(function (op) {
+        box.appendChild(field(op, copts[op.key] !== undefined ? copts[op.key] : op['default'], function (v) { (card.options = card.options || {})[op.key] = v; changed(); }));
+      });
+      var en = field({ type: 'bool', label: 'Card ligado' }, card.enabled !== false, function (v) { card.enabled = v; changed(); });
+      box.appendChild(en);
+      return;
+    }
+    $('#inspTitle').textContent = d.icon + ' ' + d.name;
+    var desc = document.createElement('div'); desc.className = 'desc'; desc.textContent = d.desc || ''; box.appendChild(desc);
+    var geo = document.createElement('div'); geo.className = 'geo';
+    ['x', 'y', 'w', 'h'].forEach(function (k) {
+      var c = document.createElement('div');
+      c.innerHTML = '<input type="number" value="' + w[k] + '"><span>' + k + '</span>';
+      c.querySelector('input').addEventListener('change', function () {
+        var n = { x: w.x, y: w.y, w: w.w, h: w.h }; n[k] = +this.value;
+        n.w = Math.max(d.minW || 1, Math.min(12, n.w)); n.h = Math.max(d.minH || 1, Math.min(6, n.h));
+        n.x = Math.max(0, Math.min(12 - n.w, n.x)); n.y = Math.max(0, Math.min(6 - n.h, n.y));
+        if (overlaps(n, page().widgets, w.id)) { toast('Encostaria em outro widget.', true); this.value = w[k]; return; }
+        w.x = n.x; w.y = n.y; w.w = n.w; w.h = n.h; changed(); renderCanvas(); renderInspector();
+      });
+      geo.appendChild(c);
+    });
+    box.appendChild(geo);
+    var wopts = w.options || {};
+    (d.options || []).forEach(function (op) {
+      box.appendChild(field(op, wopts[op.key] !== undefined ? wopts[op.key] : op['default'], function (v) { (w.options = w.options || {})[op.key] = v; changed(); renderCanvas(); }));
+    });
+    if (w.type === 'stack') {
+      var cards = document.createElement('div'); cards.className = 'f cards';
+      cards.innerHTML = '<label>Cards (selecione o stack e clique num widget da lista para adicionar)</label>';
+      (wopts.cards || []).forEach(function (c, i) {
+        var cdd = byType[c.type] || { icon: '?', name: c.type };
+        var r = document.createElement('div'); r.className = 'cd';
+        r.innerHTML = '<span>' + esc(cdd.icon) + ' ' + esc(cdd.name) + (c.enabled === false ? ' <i class="faint">(off)</i>' : '') + '</span><button class="btn sm" data-a="up">↑</button><button class="btn sm" data-a="edit">⚙</button><button class="btn sm danger" data-a="del">✕</button>';
+        r.addEventListener('click', function (e) {
+          var a = e.target.closest('[data-a]'); if (!a) return;
+          if (a.dataset.a === 'edit') { cardIdx = i; renderInspector(); return; }
+          if (a.dataset.a === 'del') w.options.cards.splice(i, 1);
+          if (a.dataset.a === 'up' && i > 0) { var t = w.options.cards[i - 1]; w.options.cards[i - 1] = c; w.options.cards[i] = t; }
+          changed(); renderCanvas(); renderInspector();
+        });
+        cards.appendChild(r);
+      });
+      if (!(wopts.cards || []).length) cards.insertAdjacentHTML('beforeend', '<div class="faint" style="font-size:12.5px">Vazio.</div>');
+      box.appendChild(cards);
+    }
+    var del = document.createElement('button'); del.className = 'btn danger'; del.textContent = 'Remover widget';
+    del.addEventListener('click', removeWidget);
+    box.appendChild(del);
+  }
+  $('#inspClose').addEventListener('click', function () { selId = null; cardIdx = null; renderCanvas(); renderInspector(); });
+
+  // ---------- live preview ----------
+  var preview = $('#preview'), previewReady = false;
+  $('#mode').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-m]'); if (!b) return;
+    mode = b.dataset.m;
+    $$('#mode button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    canvas.hidden = mode !== 'edit';
+    preview.hidden = mode !== 'live';
+    if (mode === 'live' && !preview.src) preview.src = '/panel/?preview=1';
+    else pushPreview();
+    if (mode === 'edit') renderCanvas();
+  });
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data) return;
+    if (e.data.kongbox === 'ready') { previewReady = true; pushPreview(); }
+  });
+  function panelConfig() {
+    var enabled = pages().filter(function (p) { return p.enabled !== false; });
+    return {
+      pages: enabled, display: draft.display || {}, night: draft.night || {}, appearance: draft.appearance || {}, weather: draft.weather || {},
+      shortcuts: (draft.shortcuts || []).map(function (s) { return { id: s.id, label: s.label, icon: s.icon, color: s.color, toggle: s.toggle }; }),
+    };
+  }
+  function pushPreview() {
+    if (!previewReady || mode !== 'live' || !preview.contentWindow) return;
+    var cfg = panelConfig(), p = page();
+    var idx = p ? cfg.pages.indexOf(p) : 0;
+    preview.contentWindow.postMessage({ kongbox: 'config', cfg: clone(cfg), page: Math.max(0, idx) }, location.origin);
+  }
+
+  // ---------- shortcuts ----------
+  function scKind(s) { return s.macro ? 'macro' : s.keys ? 'keys' : s.text ? 'text' : 'cmd'; }
+  function renderShortcuts() {
+    var list = $('#scList'); list.innerHTML = '';
+    (draft.shortcuts || []).forEach(function (s, i) {
+      var kind = scKind(s);
+      var el = document.createElement('div'); el.className = 'sc';
+      var val = kind === 'macro' ? JSON.stringify(s.macro, null, 1) : (s[kind] || '');
+      el.innerHTML = '<div class="face" style="background:' + esc(s.color || '#3a3a3c') + '">' + esc(s.icon || '▢') + '</div>' +
+        '<div class="fields">' +
+        '<div><label>Nome</label><input type="text" data-f="label" value="' + esc(s.label) + '"></div>' +
+        '<div><label>Id</label><input type="text" class="mono" data-f="id" value="' + esc(s.id) + '"></div>' +
+        '<div><label>Ícone</label><input type="text" data-f="icon" maxlength="4" value="' + esc(s.icon) + '"></div>' +
+        '<div><label>Cor</label><input type="color" data-f="color" value="' + esc(/^#[0-9a-f]{6}$/i.test(s.color || '') ? s.color : '#3a3a3c') + '"></div>' +
+        '<div><label>Tipo</label><select data-f="kind">' + [['cmd', 'Programa / URL'], ['keys', 'Combinação de teclas'], ['text', 'Digitar texto'], ['macro', 'Macro (JSON)']].map(function (k) { return '<option value="' + k[0] + '"' + (k[0] === kind ? ' selected' : '') + '>' + k[1] + '</option>'; }).join('') + '</select></div>' +
+        '<div><label>Estado on/off (chave de push)</label><input type="text" class="mono" data-f="toggle" value="' + esc(s.toggle || '') + '" placeholder="opcional"></div>' +
+        '<div class="wide"><label>' + ({ cmd: 'Comando (programa, URL, shell:, ms-settings: ou builtin:lock | monitor-off | mute | play-pause | next | prev)', keys: 'Teclas (ex.: ctrl+shift+m)', text: 'Texto', macro: 'Passos: [{"keys":"ctrl+t"},{"wait":300},{"text":"oi"},{"run":"outro-id"}]' })[kind] + '</label>' +
+        (kind === 'macro' || kind === 'text' ? '<textarea data-f="value" rows="3">' + esc(val) + '</textarea>' : '<input type="text" class="mono" data-f="value" value="' + esc(val) + '">') + '</div></div>' +
+        '<div class="acts"><button class="btn sm" data-a="test">Testar</button><button class="btn sm" data-a="up">↑</button><button class="btn sm danger" data-a="del">Excluir</button></div>';
+      el.addEventListener('input', function (e) { updateShortcut(i, e.target, el); });
+      el.addEventListener('change', function (e) { if (e.target.dataset.f === 'kind') { updateShortcut(i, e.target, el); renderShortcuts(); } });
+      el.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-a]'); if (!a) return;
+        if (a.dataset.a === 'test') api('/api/shortcuts/test', { method: 'POST', body: s }).then(function (r) { toast(r.ok ? (r.data.msg || 'ok') : (r.data && r.data.error) || 'falhou', !r.ok); });
+        if (a.dataset.a === 'del') { draft.shortcuts.splice(i, 1); renderShortcuts(); changed(); }
+        if (a.dataset.a === 'up' && i > 0) { var t = draft.shortcuts[i - 1]; draft.shortcuts[i - 1] = s; draft.shortcuts[i] = t; renderShortcuts(); changed(); }
+      });
+      list.appendChild(el);
+    });
+  }
+  function updateShortcut(i, input, el) {
+    var s = draft.shortcuts[i], f = input.dataset.f; if (!f) return;
+    if (f === 'kind') {
+      var old = scKind(s), v = old === 'macro' ? '' : s[old] || '';
+      delete s.cmd; delete s.keys; delete s.text; delete s.macro;
+      if (input.value === 'macro') s.macro = []; else s[input.value] = v;
+    } else if (f === 'value') {
+      var k = scKind(s);
+      if (k === 'macro') { try { s.macro = JSON.parse(input.value || '[]'); input.style.borderColor = ''; } catch (e) { input.style.borderColor = 'var(--red)'; return; } }
+      else s[k] = input.value;
+    } else if (f === 'toggle') { if (input.value) s.toggle = input.value; else delete s.toggle; }
+    else s[f] = input.value;
+    var face = el.querySelector('.face'); face.style.background = s.color || '#3a3a3c'; face.textContent = s.icon || '▢';
+    changed();
+  }
+  $('#scAdd').addEventListener('click', function () {
+    draft.shortcuts = draft.shortcuts || [];
+    draft.shortcuts.push({ id: newId(draft.shortcuts, 'atalho'), label: 'Novo atalho', icon: '⚡', color: '#0a84ff', cmd: 'notepad.exe' });
+    renderShortcuts(); changed();
+  });
+
+  // ---------- rules ----------
+  function renderRules() {
+    var list = $('#ruList'); list.innerHTML = '';
+    (draft.rules || []).forEach(function (r, i) {
+      var wh = r.when || {}, kind = wh.process ? 'process' : wh.push ? 'push' : 'metric';
+      var el = document.createElement('div'); el.className = 'sc';
+      el.innerHTML = '<div class="face" style="background:' + (r.enabled === false ? '#8e8e93' : '#ff9f0a') + '">⚡</div><div class="fields">' +
+        '<div><label>Nome</label><input type="text" data-f="name" value="' + esc(r.name) + '"></div>' +
+        '<div><label>Quando</label><select data-f="kind"><option value="metric"' + (kind === 'metric' ? ' selected' : '') + '>Métrica passa de</option><option value="process"' + (kind === 'process' ? ' selected' : '') + '>Processo aberto/fechado</option><option value="push"' + (kind === 'push' ? ' selected' : '') + '>Valor de webhook</option></select></div>' +
+        (kind === 'metric'
+          ? '<div><label>Métrica</label><select data-f="metric">' + METRICS.map(function (m) { return '<option value="' + m[0] + '"' + (wh.metric === m[0] ? ' selected' : '') + '>' + m[1] + '</option>'; }).join('') + '</select></div>' +
+            '<div><label>Condição</label><select data-f="op">' + ['>', '>=', '<', '<='].map(function (o) { return '<option' + ((wh.op || '>') === o ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+            '<div><label>Valor</label><input type="number" data-f="value" value="' + esc(wh.value) + '"></div><div><label>Por (segundos)</label><input type="number" data-f="forSec" value="' + esc(wh.forSec || 0) + '"></div>'
+          : kind === 'process'
+            ? '<div><label>Processo</label><input type="text" class="mono" data-f="process" value="' + esc(wh.process) + '" placeholder="obs64"></div><div><label>Estado</label><select data-f="running"><option value="1"' + (wh.running !== false ? ' selected' : '') + '>aberto</option><option value="0"' + (wh.running === false ? ' selected' : '') + '>fechado</option></select></div>'
+            : '<div><label>Chave</label><input type="text" class="mono" data-f="push" value="' + esc(wh.push) + '"></div><div><label>Igual a (vazio = existir)</label><input type="text" data-f="equals" value="' + esc(wh.equals || '') + '"></div>') +
+        '<div><label>Intervalo mínimo (s)</label><input type="number" data-f="cooldownSec" value="' + esc(r.cooldownSec == null ? 300 : r.cooldownSec) + '"></div>' +
+        '<div class="wide"><label>Então (JSON): [{"notify":{"title":"…","text":"…","level":"warn"}}, {"goto":"system"}, {"run":"id"}, {"push":{"key":"…","value":"…"}}]</label><textarea data-f="then" rows="3">' + esc(JSON.stringify(r.then || [])) + '</textarea></div>' +
+        '</div><div class="acts"><label class="row" style="gap:6px;font-size:12px"><span class="sw"><input type="checkbox" data-f="enabled"' + (r.enabled !== false ? ' checked' : '') + '><span></span></span></label><button class="btn sm" data-a="test">Testar</button><button class="btn sm danger" data-a="del">Excluir</button></div>';
+      el.addEventListener('input', function (e) { updateRule(r, e.target); });
+      el.addEventListener('change', function (e) { var f = e.target.dataset.f; if (f === 'kind' || f === 'enabled') { updateRule(r, e.target); renderRules(); } });
+      el.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-a]'); if (!a) return;
+        if (a.dataset.a === 'del') { draft.rules.splice(i, 1); renderRules(); changed(); }
+        if (a.dataset.a === 'test') {
+          if (dirty()) { toast('Salve antes de testar.', true); return; }
+          api('/api/rules/test', { method: 'POST', body: { id: r.id } }).then(function (x) { toast(x.ok ? 'Ações disparadas.' : (x.data && x.data.error) || 'falhou', !x.ok); });
+        }
+      });
+      list.appendChild(el);
+    });
+  }
+  function updateRule(r, input) {
+    var f = input.dataset.f; if (!f) return;
+    r.when = r.when || {};
+    var v = input.type === 'checkbox' ? input.checked : input.value;
+    if (f === 'name') r.name = v;
+    else if (f === 'enabled') r.enabled = v;
+    else if (f === 'cooldownSec') r.cooldownSec = +v;
+    else if (f === 'kind') r.when = v === 'metric' ? { metric: 'cpu', op: '>', value: 90, forSec: 30 } : v === 'process' ? { process: '', running: true } : { push: '', equals: '' };
+    else if (f === 'then') { try { r.then = JSON.parse(v || '[]'); input.style.borderColor = ''; } catch (e) { input.style.borderColor = 'var(--red)'; return; } }
+    else if (f === 'value' || f === 'forSec') r.when[f] = +v;
+    else if (f === 'running') r.when.running = v === '1';
+    else r.when[f] = v;
+    changed();
+  }
+  $('#ruAdd').addEventListener('click', function () {
+    draft.rules = draft.rules || [];
+    draft.rules.push({ id: newId(draft.rules, 'regra'), name: 'Nova regra', enabled: true, when: { metric: 'cpu', op: '>', value: 90, forSec: 30 }, then: [{ notify: { title: 'CPU alta', text: 'Acima de 90% há 30 s', level: 'warn' } }], cooldownSec: 300 });
+    renderRules(); changed();
+  });
+
+  // ---------- webhooks ----------
+  function renderWebhookExamples() {
+    var base = location.origin;
+    var ex = [
+      ['Valor simples', 'curl -X POST ' + base + '/api/push/temperature -d 21.5'],
+      ['Valor com detalhes', 'curl -X POST ' + base + '/api/push/build -H "Content-Type: application/json" -d \'{"value":"passed","sub":"main · 3m 12s"}\''],
+      ['Expira em 10 min', 'curl -X POST "' + base + '/api/push/door?ttl=600" -d open'],
+      ['Notificação', 'curl -X POST ' + base + '/api/notify -H "Content-Type: application/json" -d \'{"title":"Deploy","text":"Produção no ar","level":"ok"}\''],
+      ['Trocar de página', 'curl -X POST ' + base + '/api/goto/music'],
+      ['Atualizar cotas/GitHub', 'curl -X POST ' + base + '/api/refresh'],
+    ];
+    $('#whEx').innerHTML = ex.map(function (x) {
+      return '<div style="margin-bottom:12px"><div class="dim" style="font-size:12.5px;margin-bottom:4px">' + esc(x[0]) + ' <button class="btn sm ghost" data-copy="' + esc(x[1]) + '">copiar</button></div><pre class="code">' + esc(x[1]) + '</pre></div>';
+    }).join('');
+  }
+  $('#whEx').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-copy]'); if (!b) return;
+    navigator.clipboard.writeText(b.dataset.copy).then(function () { toast('Copiado.'); }, function () { toast('Não deu para copiar.', true); });
+  });
+  function loadWebhooks() {
+    api('/api/push').then(function (r) {
+      var v = r.data || {}, keys = Object.keys(v);
+      $('#whValues').innerHTML = keys.length ? keys.map(function (k) {
+        return '<div class="item"><div class="lbl"><span class="mono">' + esc(k) + '</span><small>' + esc(JSON.stringify(v[k].value)) + (v[k].sub ? ' · ' + esc(v[k].sub) : '') + '</small></div><button class="btn sm danger" data-del="' + esc(k) + '">Remover</button></div>';
+      }).join('') : '<div class="item dim">Nenhum valor ainda.</div>';
+    });
+  }
+  $('#whValues').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-del]'); if (!b) return;
+    api('/api/push/' + encodeURIComponent(b.dataset.del), { method: 'DELETE' }).then(loadWebhooks);
+  });
+  $('#whNotify').addEventListener('click', function () { api('/api/notify', { method: 'POST', body: { title: 'Olá do KONGBOX', text: 'Notificação de teste', level: 'ok' } }).then(function (r) { toast(r.ok ? 'Enviada.' : 'Falhou.', !r.ok); }); });
+  $('#whPush').addEventListener('click', function () { api('/api/push/build', { method: 'POST', body: { value: 'passed', sub: 'teste pelo editor' } }).then(function () { toast('Enviado.'); loadWebhooks(); }); });
+  $('#whReload').addEventListener('click', function () { api('/api/refresh?reload=1', { method: 'POST' }).then(function () { toast('Painel recarregando.'); }); });
+
+  // ---------- phone ----------
+  function loadPhones() {
+    api('/api/phones').then(function (r) {
+      var list = r.data || [];
+      $('#phones').innerHTML = list.length ? list.map(function (p) {
+        var st = p.status === 'device' ? (p.reverse ? '<span class="chip ok">● conectado via USB</span>' : '<span class="chip warn">sem reverse</span>') : '<span class="chip warn">' + esc(p.status) + '</span>';
+        return '<div class="item"><div class="lbl"><b>' + esc(p.model) + '</b><small class="mono">' + esc(p.serial) + '</small></div>' + st +
+          (p.status === 'device' ? '<button class="btn sm" data-ins="' + esc(p.serial) + '">' + (p.installed ? 'Atualizar app' : 'Instalar app') + '</button>' + (p.installed ? '<button class="btn sm primary" data-open="' + esc(p.serial) + '">Abrir KONGBOX</button>' : '') : '') + '</div>';
+      }).join('') : '<div class="item"><div class="lbl">Nenhum celular encontrado<small>Ative Opções do desenvolvedor › Depuração USB, conecte o cabo e aceite a chave RSA no celular.</small></div></div>';
+    });
+    api('/api/info').then(function (r) {
+      var i = r.data || {};
+      $('#phoneInfo').innerHTML =
+        '<div class="item"><div class="lbl">adb<small class="mono">' + esc(i.adb || 'não encontrado') + '</small></div>' + (i.adb ? '<span class="chip ok">ok</span>' : '<span class="chip err">ausente</span>') + '</div>' +
+        '<div class="item"><div class="lbl">APK do painel<small class="mono">' + esc(i.apk || 'compile com scripts/build.ps1 ou coloque KongBox.apk ao lado do agente') + '</small></div>' + (i.apk ? '<span class="chip ok">pronto</span>' : '<span class="chip warn">ausente</span>') + '</div>' +
+        '<div class="item"><div class="lbl">Configuração<small class="mono">' + esc(i.configPath) + '</small></div></div>';
+    });
+  }
+  $('#phones').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-ins],[data-open]'); if (!b) return;
+    if (b.dataset.ins) { b.disabled = true; b.textContent = 'Instalando…'; api('/api/phone/install', { method: 'POST', body: { serial: b.dataset.ins } }).then(function (r) { toast(r.ok ? 'App instalado.' : (r.data && r.data.error) || 'falhou', !r.ok); loadPhones(); }); }
+    else api('/api/phone/open', { method: 'POST', body: { serial: b.dataset.open } }).then(function (r) { toast(r.ok ? 'Abrindo no celular.' : 'Falhou.', !r.ok); });
+  });
+
+  // ---------- general ----------
+  var ACCENTS = ['#0a84ff', '#30d158', '#bf5af2', '#ff9f0a', '#ff375f', '#64d2ff', '#ffd60a', '#f5f5f7'];
+  function renderGeneral() {
+    $$('[data-k]').forEach(function (el) {
+      var v = get(el.dataset.k);
+      if (el.type === 'checkbox') el.checked = v !== false && v != null ? !!v : false;
+      else el.value = v == null ? '' : v;
+    });
+    // defaults that are "on" unless set to false
+    ['display.showSeconds', 'display.hour24', 'display.vibrate', 'display.volumeKeys', 'quotas.claude', 'quotas.codex'].forEach(function (k) {
+      var el = $('[data-k="' + k + '"]'); if (el) el.checked = get(k) !== false;
+    });
+    var w = draft.weather || {};
+    $('#geoNow').textContent = (w.city || '—') + ' · ' + (w.lat != null ? (+w.lat).toFixed(2) + ', ' + (+w.lon).toFixed(2) : '');
+    $$('#apPreset button').forEach(function (b) { b.classList.toggle('on', ((draft.appearance || {}).preset || 'glass') === b.dataset.p); });
+    $('#apAccent').innerHTML = ACCENTS.map(function (c) { return '<button style="background:' + c + '" data-c="' + c + '" class="' + (((draft.appearance || {}).accent || '#0a84ff').toLowerCase() === c ? 'on' : '') + '" title="' + c + '"></button>'; }).join('');
+    $('#ghRepos').value = ((draft.github || {}).repos || []).join('\n');
+  }
+  $$('[data-k]').forEach(function (el) {
+    el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', function () {
+      var v = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (el.value === '' ? 0 : +el.value) : el.value;
+      set(el.dataset.k, v); changed();
+    });
+  });
+  $('#apPreset').addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (!b) return; set('appearance.preset', b.dataset.p); renderGeneral(); changed(); });
+  $('#apAccent').addEventListener('click', function (e) { var b = e.target.closest('[data-c]'); if (!b) return; set('appearance.accent', b.dataset.c); renderGeneral(); changed(); });
+  $('#ghRepos').addEventListener('input', function () { set('github.repos', this.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean)); changed(); });
+  var geoT = 0;
+  $('#geoQ').addEventListener('input', function () {
+    var q = this.value.trim(); clearTimeout(geoT);
+    if (q.length < 2) { $('#geoRes').innerHTML = ''; return; }
+    geoT = setTimeout(function () {
+      api('/api/geocode?q=' + encodeURIComponent(q)).then(function (r) {
+        var res = (r.data && r.data.results) || [];
+        $('#geoRes').innerHTML = res.map(function (g, i) { return '<button data-i="' + i + '">' + esc(g.name) + ' <span class="faint">' + esc([g.admin1, g.country].filter(Boolean).join(', ')) + '</span></button>'; }).join('') || '<span class="faint">nada encontrado</span>';
+        $$('#geoRes button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var g = res[+b.dataset.i];
+            draft.weather = { city: g.name, lat: Math.round(g.latitude * 1000) / 1000, lon: Math.round(g.longitude * 1000) / 1000 };
+            $('#geoRes').innerHTML = ''; $('#geoQ').value = ''; renderGeneral(); changed();
+          });
+        });
+      });
+    }, 300);
+  });
+  function loadInfo() {
+    api('/api/info').then(function (r) {
+      var i = r.data || {};
+      $('#ver').textContent = 'v' + (i.version || '?') + ' · ' + (i.host || '').toLowerCase();
+      $('#hookState').textContent = i.hookInstalled ? 'instalado' : 'não instalado';
+      $('#hookBtn').textContent = i.hookInstalled ? 'Remover hook' : 'Instalar hook';
+      $('#hookBtn').dataset.on = i.hookInstalled ? '1' : '';
+      $('#autostart').checked = !!i.autostart;
+    });
+  }
+  $('#hookBtn').addEventListener('click', function () {
+    var on = this.dataset.on === '1';
+    api(on ? '/api/claude/hook' : '/api/claude/hook/install', { method: on ? 'DELETE' : 'POST' }).then(function (r) { toast((r.data && (r.data.msg || r.data.error)) || 'ok', !r.ok); loadInfo(); });
+  });
+  $('#autostart').addEventListener('change', function () { api('/api/autostart', { method: 'POST', body: { enabled: this.checked } }).then(function (r) { toast((r.data && r.data.msg) || 'ok', !r.ok); }); });
+
+  // ---------- advanced ----------
+  $('#rawApply').addEventListener('click', function () {
+    try { draft = JSON.parse($('#raw').value); $('#rawMsg').textContent = 'Aplicado ao rascunho. Salve para valer.'; pageIdx = 0; selId = null; renderAll(); changed({ keepRaw: true }); }
+    catch (e) { $('#rawMsg').textContent = 'JSON inválido: ' + e.message; }
+  });
+
+  // ---------- status footer ----------
+  function foot() {
+    api('/api/state').then(function (r) {
+      var s = r.data && r.data.sys;
+      $('#foot').innerHTML = s ? '<span class="ok">●</span> agente online<br>cpu ' + Math.round(s.cpu) + '% · ram ' + Math.round(s.ram.pct) + '%' : '<span style="color:var(--red)">●</span> agente offline';
+    });
+  }
+
+  function renderAll() {
+    pageIdx = Math.max(0, Math.min(pageIdx, pages().length - 1));
+    renderPages(); renderCanvas(); renderInspector(); renderPalette(); renderShortcuts(); renderRules(); renderGeneral();
+  }
+
+  Promise.all([api('/api/settings'), api('/api/catalog')]).then(function (r) {
+    if (!r[0].ok) { document.body.innerHTML = '<p style="padding:40px;font-family:var(--mono)">agente offline_</p>'; return; }
+    saved = r[0].data; draft = clone(saved);
+    catalog = r[1].data.widgets; templates = r[1].data.templates;
+    catalog.forEach(function (d) { byType[d.type] = d; });
+    renderAll(); renderWebhookExamples(); changed(); loadInfo(); foot();
+    setInterval(foot, 5000);
+  });
+})();
+</script>
+</body>
+</html>

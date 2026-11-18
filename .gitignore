@@ -1,0 +1,27 @@
+# .NET
+bin/
+obj/
+*.user
+publish/
+dist/
+
+# Android / Gradle
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# editors & tools
+.vscode/
+.idea/
+.vs/
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+*.log

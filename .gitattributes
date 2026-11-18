@@ -1,0 +1,8 @@
+# Line endings: LF everywhere, CRLF only for Windows scripts. gradlew must stay LF or it will not run on Linux/CI.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.jar binary
+*.png binary
+*.ico binary
