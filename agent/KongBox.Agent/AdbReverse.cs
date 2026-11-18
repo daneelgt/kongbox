@@ -106,8 +106,8 @@ sealed class AdbReverse : IDisposable
 
     public (bool ok, string msg) Install(string serial)
     {
-        var apk = FindApk();
-        if (apk is null) return (false, "KongBox.apk não encontrado ao lado do agente.");
+        var apk = ApkShare.ApkPath();
+        if (apk is null) return (false, "Este agente não tem o APK (rode o build de release).");
         var (code, output) = Adb($"-s {serial} install -r \"{apk}\"", 120_000);
         return (code == 0 && output.Contains("Success"), output.Split('\n').LastOrDefault() ?? output);
     }

@@ -405,6 +405,11 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
         <div class="item"><div class="lbl">Endereços deste PC<small id="lanIps" class="mono">—</small></div><button class="btn" id="pairBtn">Parear pelo Wi-Fi</button></div>
       </div>
       <div class="group" id="pairBox" style="margin-top:12px" hidden></div>
+      <h2>Instalar em outro celular</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Baixar o app pelo Wi-Fi<small>sem cabo e sem adb: o celular escaneia um QR e baixa o KongBox.apk deste PC (fica disponível por 10 minutos)</small></div><button class="btn" id="apkShare">Mostrar QR do app</button></div>
+      </div>
+      <div class="group" id="apkBox" style="margin-top:12px" hidden></div>
       <h2>Celulares pareados</h2>
       <div class="group" id="lanPhones"></div>
       <h2>Ferramentas</h2>
@@ -1275,6 +1280,21 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
           api('/api/info').then(function (x) { if (x.ok || ++tries > 30) { clearInterval(t); loadLan(); } });
         }, 700);
       });
+    });
+  });
+  $('#apkShare').addEventListener('click', function () {
+    api('/api/apk/share', { method: 'POST' }).then(function (r) {
+      if (!r.ok) { toast((r.data && r.data.error) || 'Falhou.', true); return; }
+      var d = r.data;
+      $('#apkBox').hidden = false;
+      $('#apkBox').innerHTML = '<div class="pair"><div class="qr">' + d.qr + '</div><div>' +
+        '<div class="dim" style="font-size:13px">No celular (mesma rede Wi-Fi):</div>' +
+        '<ol class="ig-steps" style="margin-top:6px"><li>Abra a câmera e escaneie o QR (ou digite o endereço no navegador).</li>' +
+        '<li>Baixe o <b>KongBox.apk</b> e toque nele.</li><li>Se o Android pedir, permita <b>instalar apps desta fonte</b> para o navegador.</li>' +
+        '<li>Abra o KONGBOX e pareie pelo Wi-Fi (acima).</li></ol>' +
+        '<dl><dt>Endereço</dt><dd>' + esc(d.url) + '</dd></dl>' +
+        '<div class="row" style="margin-top:12px"><button class="btn" id="apkStop">Fechar</button></div></div></div>';
+      $('#apkStop').onclick = function () { api('/api/apk/share', { method: 'DELETE' }); $('#apkBox').hidden = true; };
     });
   });
   $('#lanPhones').addEventListener('click', function (e) {

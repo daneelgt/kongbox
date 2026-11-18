@@ -14,7 +14,7 @@ namespace KongBox.Agent;
 /// </summary>
 sealed class Lan
 {
-    public const int Port = 8766;
+    public const int Port = 8766; // the APK download (ApkShare) uses 8767
     static string CertPath => AppPaths.File("lan.pfx");
     static string StorePath => AppPaths.File("pairing.json");
 

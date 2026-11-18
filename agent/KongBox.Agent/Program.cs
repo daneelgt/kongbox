@@ -6,6 +6,11 @@ using Microsoft.Win32;
 
 // Hook mode: Claude Code runs "KongBoxAgent.exe --claude-hook" for every permission request.
 if (args.Contains("--claude-hook")) return await ClaudeHook.RunHookProcess();
+if (args.Contains("--uninstall")) return Installer.Uninstall();
+#if !DEBUG
+// the release exe is its own installer: offer to install (or update) unless it already runs from the install folder
+if (!args.Contains("--portable") && !args.Contains("--restart-wait") && Installer.OfferInstall()) return 0;
+#endif
 
 const int Port = 8765;
 const string Url = "http://127.0.0.1:8765/";
@@ -39,6 +44,7 @@ var approvals = new ApprovalStore();
 var adb = new AdbReverse(config);
 var feeds = new FeedProxy(http);
 var lan = new Lan();
+var apkShare = new ApkShare();
 var mirror = new NotificationMirror(config, push);
 var lanEnabled = config.Snapshot()["lan"].Bool("enabled");
 long reloadSeq = 0;
@@ -262,7 +268,8 @@ app.MapGet("/api/info", () => JsonResult(new JsonObject
     ["configPath"] = ConfigStore.FilePath,
     ["adb"] = adb.AdbPath,
     ["adbError"] = adb.Error,
-    ["apk"] = AdbReverse.FindApk(),
+    ["apk"] = ApkShare.ApkPath(),
+    ["installed"] = Installer.RunningInstalled,
     ["hookInstalled"] = ClaudeHook.Installed(),
     ["autostart"] = Autostart.Enabled(),
 }));
@@ -555,6 +562,19 @@ app.MapPost("/api/pair/claim", async (HttpRequest r) =>
     return token is null ? Fail(error ?? "Código inválido.", 403) : JsonResult(new JsonObject { ["token"] = token, ["host"] = Environment.MachineName });
 });
 app.MapDelete("/api/lan/phones/{id}", (string id) => lan.Revoke(id) ? Ok("Celular removido.") : Fail("Não encontrado.", 404));
+app.MapPost("/api/quit", () => { _ = Task.Run(async () => { await Task.Delay(300); cts.Cancel(); }); return Ok("Saindo…"); });
+// install the phone app over Wi-Fi: a 10-minute plain HTTP download of the APK, with a QR code for the phone's camera
+app.MapPost("/api/apk/share", () =>
+{
+    var (ok, msg) = apkShare.Start();
+    if (!ok) return Fail(msg);
+    var ip = Lan.Addresses().FirstOrDefault() ?? "127.0.0.1";
+    var url = $"http://{ip}:{ApkShare.Port}/kongbox.apk";
+    using var gen = new QRCoder.QRCodeGenerator();
+    using var data = gen.CreateQrCode(url, QRCoder.QRCodeGenerator.ECCLevel.M);
+    return JsonResult(new JsonObject { ["url"] = url, ["qr"] = new QRCoder.SvgQRCode(data).GetGraphic(6, "#000000", "#ffffff", true), ["until"] = apkShare.Until.ToUnixTimeMilliseconds() });
+});
+app.MapDelete("/api/apk/share", () => { apkShare.Stop(); return Ok(); });
 app.MapPost("/api/restart", () =>
 {
     // a fresh process waits for this one to exit, then takes over (Kestrel rebinds with the new Wi-Fi setting)
@@ -628,10 +648,10 @@ static class Autostart
         return k?.GetValue(Name) is string;
     }
 
-    public static void Set(bool on)
+    public static void Set(bool on, string? path = null)
     {
         using var k = Registry.CurrentUser.CreateSubKey(Key);
-        if (on) k.SetValue(Name, $"\"{Environment.ProcessPath}\"");
+        if (on) k.SetValue(Name, $"\"{path ?? Environment.ProcessPath}\"");
         else k.DeleteValue(Name, false);
     }
 }

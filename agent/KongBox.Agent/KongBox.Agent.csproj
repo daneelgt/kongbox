@@ -10,7 +10,8 @@
     <Product>KONGBOX</Product>
     <Company>KONGBOX</Company>
     <Description>KONGBOX desktop agent: feeds the KONGBOX Android desk panel over USB.</Description>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
+    <ApplicationIcon>kongbox.ico</ApplicationIcon>
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <SatelliteResourceLanguages>en;pt-BR</SatelliteResourceLanguages>
@@ -31,6 +32,8 @@
     <EmbeddedResource Include="settings.html" LogicalName="settings.html" />
     <EmbeddedResource Include="widgets.json" LogicalName="widgets.json" />
     <EmbeddedResource Include="templates.json" LogicalName="templates.json" />
+    <!-- release builds carry the phone app inside the exe (scripts/build.ps1 builds the APK first) -->
+    <EmbeddedResource Include="..\..\dist\KongBox.apk" LogicalName="KongBox.apk" Condition="Exists('..\..\dist\KongBox.apk') And '$(Configuration)' == 'Release'" />
     <!-- the phone's panel, served at /panel/ for the editor's live preview and for the Android WebView -->
     <EmbeddedResource Include="..\..\android\app\src\main\assets\www\*.*" LogicalName="www/%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\android\app\src\main\assets\www\widgets\*.*" LogicalName="www/widgets/%(Filename)%(Extension)" />
