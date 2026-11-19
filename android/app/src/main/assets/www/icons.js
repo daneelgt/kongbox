@@ -48,6 +48,7 @@
     shield: '<path d="M12 3.5 19 6v5.5c0 4.5-3 7.6-7 9-4-1.4-7-4.5-7-9V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
     bolt: '<path d="M13.5 3 5.5 13.5H12L10.5 21l8-10.5H12z"/>',
     usb: '<path d="M12 3v14"/><path d="m9 6 3-3 3 3"/><path d="M12 12.5 7.5 10V7.5M12 14.5l4.5-2.5V9.5"/><rect x="6.5" y="6" width="2" height="2" rx=".4" fill="currentColor"/><circle cx="16.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="19" r="2"/>',
+    bluetooth: '<path d="m7 7.5 10 9-5 4.5V3l5 4.5-10 9"/>',
     wifi: '<path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.5a4 4 0 0 1 6 0"/><circle cx="12" cy="19.3" r=".9" fill="currentColor"/>',
     rocket: '<path d="M12 3.5c3.5 2 5 5.5 5 9.5l-2 3.5H9L7 13c0-4 1.5-7.5 5-9.5z"/><circle cx="12" cy="10" r="1.8"/><path d="M9.5 19.5 12 21l2.5-1.5M7 13l-2.5 2.5V18L8 17M17 13l2.5 2.5V18L16 17"/>',
 

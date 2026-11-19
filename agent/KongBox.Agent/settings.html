@@ -405,6 +405,11 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
         <div class="item"><div class="lbl">Endereços deste PC<small id="lanIps" class="mono">—</small></div><button class="btn" id="pairBtn">Parear pelo Wi-Fi</button></div>
       </div>
       <div class="group" id="pairBox" style="margin-top:12px" hidden></div>
+      <h2>Bluetooth</h2>
+      <div class="group">
+        <div class="item"><div class="lbl">Conectar pelo Bluetooth<small id="btState">verificando…</small></div><label class="sw"><input type="checkbox" data-k="bluetooth.enabled"><span></span></label></div>
+        <div class="item"><div class="lbl">Como conectar<small>1. No celular: Configurações › Bluetooth › parear com este PC (aceite o código nos dois). 2. Abra o KONGBOX sem cabo e sem Wi-Fi do PC: ele entra pelo Bluetooth sozinho. Mudar o interruptor vale depois de reiniciar o agente.</small></div></div>
+      </div>
       <h2>Instalar em outro celular</h2>
       <div class="group">
         <div class="item"><div class="lbl">Baixar o app pelo Wi-Fi<small>sem cabo e sem adb: o celular escaneia um QR e baixa o KongBox.apk deste PC (fica disponível por 10 minutos)</small></div><button class="btn" id="apkShare">Mostrar QR do app</button></div>
@@ -1119,7 +1124,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       else el.value = v == null ? '' : v;
     });
     // defaults that are "on" unless set to false
-    ['display.showSeconds', 'display.hour24', 'display.vibrate', 'display.volumeKeys', 'display.statusBar', 'quotas.claude', 'quotas.codex', 'notifications.windows'].forEach(function (k) {
+    ['display.showSeconds', 'display.hour24', 'display.vibrate', 'display.volumeKeys', 'display.statusBar', 'quotas.claude', 'quotas.codex', 'notifications.windows', 'bluetooth.enabled'].forEach(function (k) {
       var el = $('[data-k="' + k + '"]'); if (el) el.checked = get(k) !== false;
     });
     var w = draft.weather || {};
@@ -1239,6 +1244,8 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
       $('#lanOn').checked = !!(draft.lan && draft.lan.enabled);
       $('#lanIps').textContent = l.enabled ? (l.ips || []).map(function (i) { return i + ':' + l.port; }).join('  ·  ') || 'sem rede' : 'Wi-Fi desligado';
       $('#pairBtn').disabled = !l.enabled;
+      var bt = l.bluetooth || {};
+      $('#btState').textContent = !bt.enabled ? 'desligado' : bt.error ? bt.error : bt.clients ? '● ' + bt.clients + ' celular(es) conectado(s) agora' : bt.advertising ? '● pronto: o serviço KONGBOX está visível para celulares pareados' : 'iniciando…';
       var phones = l.phones || [];
       if (knownPhones != null && phones.length > knownPhones) { toast('Celular pareado: ' + phones[phones.length - 1].name); $('#pairBox').hidden = true; clearInterval(pairPoll); }
       knownPhones = phones.length;

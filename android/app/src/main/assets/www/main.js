@@ -549,6 +549,7 @@
   // ---------- status bar (iPad) ----------
   var sb = KB.$('#statusbar'), sbBattery = null, sbBatteryAt = 0;
   function transport() {
+    if (location.port === '8768') return 'bluetooth';
     if (location.protocol === 'https:') return 'wifi';
     if (KB.android) return 'usb';
     return 'monitor';

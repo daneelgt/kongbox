@@ -5,24 +5,38 @@ using System.Drawing.Text;
 
 namespace KongBox.Agent;
 
-/// <summary>Tray icon: open settings, open the panel preview, quit. Runs on its own STA thread.</summary>
+/// <summary>Tray icon and the app window. All Windows UI lives on this one STA thread.</summary>
 static class Tray
 {
-    public static void Start(string url, Action quit)
+    static AppWindow? window;
+    static readonly ManualResetEventSlim ready = new();
+
+    /// <summary>Shows the KONGBOX window (from any thread).</summary>
+    public static void ShowWindow()
+    {
+        if (!ready.Wait(10_000) || window is null) return;
+        try { window.BeginInvoke(window.ShowAndFocus); } catch { }
+    }
+
+    public static void Start(string url, Action quit, bool showWindow)
     {
         var t = new Thread(() =>
         {
             Application.EnableVisualStyles();
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             using var icon = MakeIcon();
+            window = new AppWindow(url);
+            _ = window.Handle; // create the handle now so other threads can marshal onto this one
+            ready.Set();
             using var menu = new ContextMenuStrip();
-            menu.Items.Add("Configurações", null, (_, _) => Open(url));
-            menu.Items.Add("Painel (preview)", null, (_, _) => Open(url + "panel/"));
+            menu.Items.Add("Abrir KONGBOX", null, (_, _) => window.ShowAndFocus());
+            menu.Items.Add("Painel (preview no navegador)", null, (_, _) => Open(url + "panel/"));
             menu.Items.Add("Pasta de dados", null, (_, _) => Open(AppPaths.Dir));
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Sair", null, (_, _) => { quit(); Application.Exit(); });
+            menu.Items.Add("Sair", null, (_, _) => { window.Quitting = true; window.Close(); quit(); Application.Exit(); });
             using var ni = new NotifyIcon { Icon = icon, Text = "KONGBOX", Visible = true, ContextMenuStrip = menu };
-            ni.DoubleClick += (_, _) => Open(url);
+            ni.DoubleClick += (_, _) => window.ShowAndFocus();
+            if (showWindow) window.ShowAndFocus();
             Application.Run();
             ni.Visible = false;
         }) { IsBackground = true, Name = "tray" };

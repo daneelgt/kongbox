@@ -97,8 +97,10 @@ sealed class AdbReverse : IDisposable
         foreach (var p in new[]
         {
             Path.Combine(AppContext.BaseDirectory, "KongBox.apk"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk")),
+            // release-signed builds first: a phone with the release app refuses the debug one (other key, older version)
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "dist", "KongBox.apk")),
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "android", "app", "build", "outputs", "apk", "release", "app-release.apk")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk")),
         })
             if (File.Exists(p)) return p;
         return null;

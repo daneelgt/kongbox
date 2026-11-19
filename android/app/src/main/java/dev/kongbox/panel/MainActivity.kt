@@ -118,11 +118,14 @@ class MainActivity : Activity() {
         web.addJavascriptInterface(PairBridge(), "KongPair")
         setContentView(web)
         hideSystemUi()
+        // Android 12+ asks before an app may use paired Bluetooth devices
+        if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+            requestPermissions(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT), 7)
         if (!handlePairLink(intent)) connect()
     }
 
     private fun allowed(url: String): Boolean {
-        if (url.startsWith(OFFLINE) || url.startsWith(AgentLink.USB_PANEL)) return true
+        if (url.startsWith(OFFLINE) || url.startsWith(AgentLink.USB_PANEL) || url.startsWith(BtBridge.PANEL)) return true
         val h = link.wifiHost ?: return false
         return url.startsWith("https://$h:${AgentLink.WIFI_PORT}/panel/")
     }
@@ -282,6 +285,11 @@ class MainActivity : Activity() {
     override fun onPause() {
         web.onPause()
         super.onPause()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 7 && offline) probe()
     }
 
     override fun onDestroy() {

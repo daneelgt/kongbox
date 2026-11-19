@@ -17,7 +17,7 @@ import javax.net.ssl.X509TrustManager
  * (https://<ip>:8766, certificate pinned by SHA-256, token in an HttpOnly cookie).
  */
 class AgentLink(context: Context) {
-    enum class Route { USB, WIFI, NONE }
+    enum class Route { USB, WIFI, BLUETOOTH, NONE }
 
     data class Pc(val name: String, val hosts: List<String>, val port: Int, val fingerprint: String, val token: String)
 
@@ -34,6 +34,7 @@ class AgentLink(context: Context) {
     }
 
     private val prefs = context.getSharedPreferences("kongbox", Context.MODE_PRIVATE)
+    val bt = BtBridge(context)
 
     @Volatile var route = Route.NONE
         private set
@@ -99,16 +100,22 @@ class AgentLink(context: Context) {
         ok
     } catch (_: Exception) { false }
 
-    /** Blocking: finds a working route and returns the panel URL to load, or null. Call off the main thread. */
+    /** Blocking: finds a working route (USB, then Wi-Fi, then Bluetooth) and returns the panel URL, or null. */
     fun resolve(): String? {
         if (usbAlive()) { route = Route.USB; wifiHost = null; return USB_PANEL }
-        val p = pc ?: run { route = Route.NONE; return null }
-        for (h in p.hosts) {
-            try {
-                val (code, _, _) = https("https://$h:${p.port}/api/hello", p.fingerprint, timeoutMs = 2000)
-                if (code == 200) { route = Route.WIFI; wifiHost = h; return "https://$h:${p.port}/panel/" }
-            } catch (_: Exception) { /* next address */ }
+        val p = pc
+        if (p != null) {
+            for (h in p.hosts) {
+                try {
+                    val (code, _, _) = https("https://$h:${p.port}/api/hello", p.fingerprint, timeoutMs = 2000)
+                    if (code == 200) { route = Route.WIFI; wifiHost = h; return "https://$h:${p.port}/panel/" }
+                } catch (_: Exception) { /* next address */ }
+            }
         }
+        // Bluetooth: a PC paired in Android's Bluetooth settings that runs KONGBOX
+        try {
+            if (bt.connect() && bt.alive()) { route = Route.BLUETOOTH; wifiHost = null; return BtBridge.PANEL }
+        } catch (_: Exception) { }
         route = Route.NONE
         return null
     }

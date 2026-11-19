@@ -10,7 +10,7 @@
     <Product>KONGBOX</Product>
     <Company>KONGBOX</Company>
     <Description>KONGBOX desktop agent: feeds the KONGBOX Android desk panel over USB.</Description>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <ApplicationIcon>kongbox.ico</ApplicationIcon>
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
     <!-- pinned: 2.1.11 and older bundle a SQLite with CVE-2025-6965 (GHSA-2m69-gcr7-jv3q) -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
@@ -38,4 +39,11 @@
     <EmbeddedResource Include="..\..\android\app\src\main\assets\www\*.*" LogicalName="www/%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\android\app\src\main\assets\www\widgets\*.*" LogicalName="www/widgets/%(Filename)%(Extension)" />
   </ItemGroup>
+
+  <!-- the window is WinForms: drop the WebView2 WPF assembly, which only drags in a conflicting WindowsBase -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
 </Project>

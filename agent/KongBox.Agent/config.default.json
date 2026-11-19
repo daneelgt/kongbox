@@ -39,6 +39,9 @@
   // Wi-Fi: HTTPS on port 8766 for paired phones (pair in Configurações > Celular). Changing it restarts the agent.
   "lan": { "enabled": false },
 
+  // Bluetooth: phones paired in Windows Bluetooth settings can connect without a cable or Wi-Fi
+  "bluetooth": { "enabled": true },
+
   // Webhook key for other machines over Wi-Fi (16+ characters; local senders need no key)
   "webhookKey": "",
 

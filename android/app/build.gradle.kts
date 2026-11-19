@@ -15,8 +15,8 @@ android {
         applicationId = "dev.kongbox.panel"
         minSdk = 21 // Android 5.0: old phones are the whole point
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     signingConfigs {

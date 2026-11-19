@@ -24,7 +24,15 @@ if (waitIdx >= 0 && waitIdx + 1 < args.Length && int.TryParse(args[waitIdx + 1],
 using var single = new Mutex(true, "Global\\KongBoxAgent", out var first);
 if (!first)
 {
-    Process.Start(new ProcessStartInfo(Url) { UseShellExecute = true })?.Dispose();
+    // already running: bring its window forward instead of starting a second agent
+    try
+    {
+        using var hc = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+        using var req = new HttpRequestMessage(HttpMethod.Post, Url + "api/window/show");
+        req.Headers.Add("X-Kong", "1");
+        hc.Send(req);
+    }
+    catch { Process.Start(new ProcessStartInfo(Url) { UseShellExecute = true })?.Dispose(); }
     return 0;
 }
 
@@ -45,6 +53,7 @@ var adb = new AdbReverse(config);
 var feeds = new FeedProxy(http);
 var lan = new Lan();
 var apkShare = new ApkShare();
+var bluetooth = new BluetoothBridge(config);
 var mirror = new NotificationMirror(config, push);
 var lanEnabled = config.Snapshot()["lan"].Bool("enabled");
 long reloadSeq = 0;
@@ -471,6 +480,7 @@ app.MapGet("/api/integrations", () =>
             ["error"] = xq.Str("error"),
         },
         ["hook"] = new JsonObject { ["enabled"] = cfg["claudeHook"].Bool("enabled"), ["installed"] = ClaudeHook.Installed() },
+        ["bluetooth"] = bluetooth.Status(),
         ["notifications"] = new JsonObject { ["enabled"] = cfg["notifications"].Bool("windows", true), ["available"] = mirror.Available, ["error"] = mirror.Error },
         ["github"] = new JsonObject
         {
@@ -552,7 +562,7 @@ app.MapDelete("/api/wallpaper", () => { try { File.Delete(WallpaperPath()); } ca
 
 // ---- Wi-Fi pairing ----
 app.MapGet("/api/hello", () => JsonResult(new JsonObject { ["name"] = "KONGBOX", ["host"] = Environment.MachineName }));
-app.MapGet("/api/lan", () => JsonResult(lan.Status(lanEnabled)));
+app.MapGet("/api/lan", () => { var s = lan.Status(lanEnabled); s["bluetooth"] = bluetooth.Status(); return JsonResult(s); });
 app.MapPost("/api/pair/start", () => lanEnabled ? JsonResult(lan.StartPairing()) : Fail("Ative o Wi-Fi e reinicie o agente primeiro."));
 app.MapPost("/api/pair/cancel", () => { lan.CancelPairing(); return Ok(); });
 app.MapPost("/api/pair/claim", async (HttpRequest r) =>
@@ -562,6 +572,7 @@ app.MapPost("/api/pair/claim", async (HttpRequest r) =>
     return token is null ? Fail(error ?? "Código inválido.", 403) : JsonResult(new JsonObject { ["token"] = token, ["host"] = Environment.MachineName });
 });
 app.MapDelete("/api/lan/phones/{id}", (string id) => lan.Revoke(id) ? Ok("Celular removido.") : Fail("Não encontrado.", 404));
+app.MapPost("/api/window/show", () => { Tray.ShowWindow(); return Ok(); });
 app.MapPost("/api/quit", () => { _ = Task.Run(async () => { await Task.Delay(300); cts.Cancel(); }); return Ok("Saindo…"); });
 // install the phone app over Wi-Fi: a 10-minute plain HTTP download of the APK, with a QR code for the phone's camera
 app.MapPost("/api/apk/share", () =>
@@ -625,15 +636,14 @@ app.MapPost("/api/autostart", async (HttpRequest r) =>
     return Ok(Autostart.Enabled() ? "Inicia com o Windows." : "Não inicia com o Windows.");
 });
 
-Tray.Start(Url, () => cts.Cancel());
+Tray.Start(Url, () => cts.Cancel(), showWindow: args.Contains("--open"));
 Log.Info($"KONGBOX agent listening on {Url}" + (lanEnabled ? $" and https://*:{Lan.Port}" : ""));
-if (args.Contains("--open")) Process.Start(new ProcessStartInfo(Url) { UseShellExecute = true })?.Dispose();
 
 try { await app.RunAsync(cts.Token); }
 catch (IOException e) { Log.Warn("server: " + e.Message); }
 finally
 {
-    mirror.Dispose(); sys.Dispose(); procs.Dispose(); media.Dispose(); rules.Dispose(); sessions.Dispose(); quotas.Dispose(); github.Dispose(); adb.Dispose();
+    bluetooth.Dispose(); mirror.Dispose(); sys.Dispose(); procs.Dispose(); media.Dispose(); rules.Dispose(); sessions.Dispose(); quotas.Dispose(); github.Dispose(); adb.Dispose();
 }
 return 0;
 
