@@ -837,7 +837,7 @@ iframe.preview { width: 100%; aspect-ratio: 2 / 1; border: 0; border-radius: 16p
   function field(op, val, onChange) {
     var id = 'f' + Math.random().toString(36).slice(2, 8), html, wrap = document.createElement('div');
     wrap.className = 'f' + (op.type === 'bool' ? ' inline' : '');
-    if (op.type === 'bool') html = '<label for="' + id + '">' + esc(op.label) + '</label><span class="sw"><input type="checkbox" id="' + id + '"' + (val ? ' checked' : '') + '><span></span></span>';
+    if (op.type === 'bool') html = '<label for="' + id + '">' + esc(op.label) + '</label><label class="sw"><input type="checkbox" id="' + id + '"' + (val ? ' checked' : '') + '><span></span></label>';
     else if (op.type === 'textarea') html = '<label for="' + id + '">' + esc(op.label) + '</label><textarea id="' + id + '" rows="6">' + esc(val) + '</textarea>';
     else if (op.type === 'list') html = '<label for="' + id + '">' + esc(op.label) + '</label><textarea id="' + id + '" rows="5">' + esc((Array.isArray(val) ? val : String(val || '').split(',')).join('\n')) + '</textarea>';
     else if (op.type === 'number') html = '<label for="' + id + '">' + esc(op.label) + '</label><input type="number" id="' + id + '" value="' + esc(val) + '">';

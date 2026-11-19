@@ -56,34 +56,99 @@
         root.addEventListener('click', function (e) {
           var x = e.target.closest('[data-x]'); if (!x) return;
           if (x.dataset.x === 'open') KB.act('/api/notify/' + n.id + '/open');
-          if (x.dataset.x === 'del') KB.api('/api/notify/' + n.id, { method: 'DELETE' }).then(function () { KB.haptic(); if (after) after(); });
+          if (x.dataset.x === 'del') { KB.haptic(); if (after) after(); }
           KB.closeSheet();
         });
       });
   }
   KB.def('inbox', {
     mount: function (el) {
-      el.innerHTML = '<div class="w-h"><span>notifications</span><span class="tag"><button class="chip press" data-clear>limpar</button></span></div><div class="w-b rows ib"></div>';
+      el.innerHTML = '<div class="w-h"><span>notifications</span><span class="tag"><button class="chip press" data-clear>limpar</button></span></div><div class="w-b rows ps ib" data-noswipe></div>';
       var b = el.querySelector('.w-b'), sig = '', list = [];
+      function keep(items) { list = items; sig = items.slice().reverse().map(function (n) { return n.id; }).join(','); }
       function draw(items) {
         list = items.slice().reverse();
-        b.innerHTML = list.map(function (n, i) {
+        b.innerHTML = list.map(function (n) {
           var c = n.source === 'windows' ? 'var(--accent)' : (LEVEL[n.level] || 'var(--accent)');
-          return '<div class="row press" data-i="' + i + '"><i class="dot" style="--c:' + c + '"></i><span class="grow">' + (n.app ? '<span class="ib-app">' + esc(n.app) + '</span>' : '') + esc(n.title) +
+          return '<div class="row ib-r" data-id="' + n.id + '"><i class="dot" style="--c:' + c + '"></i><span class="grow">' + (n.app ? '<span class="ib-app">' + esc(n.app) + '</span>' : '') + esc(n.title) +
             '<span class="sub">' + esc(n.text || '') + '</span></span><span class="chip">' + fmt.ago(n.time).replace('há ', '') + '</span></div>';
         }).join('') || '<div class="empty">nenhuma notificação</div>';
       }
+      function byId(id) { return list.filter(function (n) { return String(n.id) === String(id); })[0]; }
+      function remove(id) {
+        keep(list.filter(function (n) { return String(n.id) !== String(id); }));
+        if (!list.length) draw([]);
+        KB.api('/api/notify/' + id, { method: 'DELETE' }).then(function (r) {
+          if (!r.ok && r.status !== 404) { KB.toast('Não deu para apagar a notificação'); sig = ''; }
+        });
+      }
+      // a row slides out to the side (swipe to dismiss); the list itself scrolls vertically with the finger
+      var sw = null, swallow = false;
+      b.addEventListener('pointerdown', function (e) {
+        var r = e.target.closest('.ib-r'); if (!r || r.dataset.gone) return;
+        sw = { r: r, id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, axis: null, t: performance.now() };
+      });
+      b.addEventListener('pointermove', function (e) {
+        if (!sw || e.pointerId !== sw.id) return;
+        var dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+        if (!sw.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+          sw.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+          if (sw.axis === 'x') { try { b.setPointerCapture(e.pointerId); } catch (_) { } sw.r.style.transition = 'none'; }
+        }
+        if (sw.axis !== 'x') return;
+        sw.dx = dx;
+        var w = sw.r.offsetWidth || 1;
+        sw.r.style.transform = 'translate3d(' + dx + 'px,0,0)';
+        sw.r.style.opacity = String(1 - Math.min(Math.abs(dx) / w, 1) * .7);
+        sw.r.classList.toggle('kill', Math.abs(dx) > w * .35);
+      });
+      function release(e) {
+        if (!sw || (e && e.pointerId !== sw.id)) return;
+        var s = sw; sw = null;
+        if (s.axis !== 'x') return;
+        swallow = true; setTimeout(function () { swallow = false; }, 80);
+        var w = s.r.offsetWidth || 1, speed = Math.abs(s.dx) / Math.max(performance.now() - s.t, 1);
+        s.r.style.transition = '';
+        if (Math.abs(s.dx) > w * .35 || (speed > .6 && Math.abs(s.dx) > 30)) {
+          var dir = s.dx > 0 ? 1 : -1, h = s.r.offsetHeight;
+          s.r.dataset.gone = '1';
+          KB.haptic();
+          s.r.style.transform = 'translate3d(' + dir * w * 1.1 + 'px,0,0)';
+          s.r.style.opacity = '0';
+          // after it leaves, close the gap
+          setTimeout(function () {
+            s.r.style.transition = 'height .26s var(--ease), margin .26s var(--ease)';
+            s.r.style.height = h + 'px';
+            s.r.offsetHeight; // commit the start height
+            s.r.style.height = '0px';
+            s.r.style.marginBottom = 'calc(var(--u) * -.35)';
+            setTimeout(function () { if (s.r.parentNode) s.r.parentNode.removeChild(s.r); remove(s.r.dataset.id); }, 270);
+          }, 200);
+        } else {
+          s.r.classList.remove('kill');
+          s.r.style.transform = '';
+          s.r.style.opacity = '';
+        }
+      }
+      b.addEventListener('pointerup', release);
+      b.addEventListener('pointercancel', release);
       b.addEventListener('click', function (e) {
-        var r = e.target.closest('[data-i]'); if (!r) return;
+        if (swallow) return;
+        var r = e.target.closest('.ib-r'); if (!r || r.dataset.gone) return;
+        var n = byId(r.dataset.id); if (!n) return;
         KB.haptic();
-        noticeSheet(list[+r.dataset.i], function () { sig = ''; });
+        noticeSheet(n, function () { remove(n.id); draw(list.slice().reverse()); });
       });
       el.querySelector('[data-clear]').addEventListener('click', function () {
-        KB.api('/api/notify', { method: 'DELETE' }).then(function () { KB.haptic(); draw([]); sig = ''; });
+        if (!list.length) return;
+        KB.api('/api/notify', { method: 'DELETE' }).then(function (r) {
+          if (!r.ok) { KB.toast('Não deu para limpar as notificações'); return; }
+          KB.haptic(); keep([]); draw([]);
+        });
       });
       return {
         update: function (s, full) {
-          if (!full || !s.inbox) return;
+          if (!full || !s.inbox || sw) return;
           var next = s.inbox.map(function (n) { return n.id; }).join(',');
           if (next === sig) return;
           sig = next;

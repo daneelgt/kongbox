@@ -159,6 +159,8 @@ body.portrait .qt { flex-direction: column; }
 
 /* notifications */
 .ib-app { display: inline-block; margin-right: .45em; font: 600 .72em var(--sans); color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.ib-r { transition: transform .32s var(--ease), opacity .32s var(--ease), background-color .2s; will-change: transform; border-radius: calc(var(--u) * .8); overflow: hidden; }
+.ib-r.kill { background: rgba(255, 69, 58, .22); }
 .w-inbox .row, .w-hackernews .row, .w-crypto .row, .w-exchange { cursor: pointer; }
 
 /* github */
