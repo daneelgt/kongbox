@@ -415,6 +415,23 @@ app.MapPost("/api/goto/{page}", (string page, HttpRequest r) =>
     push.Goto(page, int.TryParse(r.Query["countdown"], out var c) ? c : 3);
     return Ok();
 });
+// the panel reports its engine and script errors (diag.js): one log line each, capped so a loop cannot flood the log
+var clientLogs = 0;
+var clientLogWindow = DateTime.UtcNow;
+app.MapPost("/api/clientlog", async (HttpRequest r) =>
+{
+    if (DateTime.UtcNow - clientLogWindow > TimeSpan.FromMinutes(1)) { clientLogWindow = DateTime.UtcNow; clientLogs = 0; }
+    if (++clientLogs > 30) return Ok();
+    var b = await BodyJson(r) as JsonObject;
+    if (b is null) return Ok();
+    string Cut(string s) => s.Length > 300 ? s[..300] : s;
+    var via = r.HttpContext.Connection.LocalPort == Lan.Port ? "wifi" : "usb/bluetooth/pc";
+    if (b.Str("kind") == "error")
+        Log.Warn($"panel error ({via}): {Cut(b.Str("msg"))} @ {Cut(b.Str("src"))}:{b.Num("line")} | {Cut(b.Str("ua"))}");
+    else
+        Log.Info($"panel ({via}) {Cut(b.Str("screen"))} cq={b["cq"]} ro={b["resizeObserver"]} pe={b["pointer"]} | {Cut(b.Str("ua"))}");
+    return Ok();
+});
 app.MapPost("/api/refresh", (HttpRequest r) =>
 {
     quotas.RefreshNow();

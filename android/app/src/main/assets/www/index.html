@@ -23,6 +23,7 @@
 <div id="overview"><div class="grid" id="overviewGrid"></div></div>
 <div id="night"><div><div class="t" id="nightT"></div><div class="d" id="nightD"></div></div></div>
 
+<script src="diag.js"></script>
 <script src="icons.js"></script>
 <script src="main.js"></script>
 <script src="widgets/time.js"></script>
@@ -32,6 +33,13 @@
 <script src="widgets/personal.js"></script>
 <script src="widgets/web.js"></script>
 <script src="widgets/stack.js"></script>
-<script>KB.start();</script>
+<script>
+  // if the panel cannot start on this WebView, say so on screen instead of leaving it black
+  try { KB.start(); }
+  catch (e) {
+    document.body.innerHTML = '<div style="color:#fff;font:16px sans-serif;padding:24px">O painel não abriu neste aparelho.<br><small style="opacity:.6">' + String(e && e.message || e) + ' · ' + navigator.userAgent + '</small></div>';
+    if (window.onerror) window.onerror(String(e && e.message || e), 'index.html', 0, 0);
+  }
+</script>
 </body>
 </html>

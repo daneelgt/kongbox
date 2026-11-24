@@ -197,7 +197,7 @@ sealed class Lan
         path.StartsWith("/panel/") || path == "/panel"
         || (path == "/api/wallpaper" && method == "GET")
         || path is "/api/config" or "/api/state" or "/api/art" or "/api/proxy" or "/api/procs" or "/api/volume" or "/api/procs/kill" or "/api/rules/pause"
-        || path.StartsWith("/api/notify/") || (path == "/api/notify" && method == "DELETE") || path is "/api/github/open" or "/api/github/act" or "/api/github/local" or "/api/sessions/open" or "/api/open" or "/api/refresh"
+        || path.StartsWith("/api/notify/") || (path == "/api/notify" && method == "DELETE") || path == "/api/clientlog" || path is "/api/github/open" or "/api/github/act" or "/api/github/local" or "/api/sessions/open" or "/api/open" or "/api/refresh"
         || path.StartsWith("/api/run/") || path.StartsWith("/api/media/") || path.StartsWith("/api/approvals/")
         || (path.StartsWith("/api/widget/") && path.EndsWith("/note"));
 }

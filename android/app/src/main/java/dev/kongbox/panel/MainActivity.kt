@@ -78,6 +78,7 @@ class MainActivity : Activity() {
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
             setSupportZoom(false)
+            textZoom = 100                  // ignore the system font size (Samsung tablets ship it enlarged): the panel sizes its own text
             builtInZoomControls = false
             displayZoomControls = false
             allowFileAccess = true          // only for the bundled offline screen
@@ -121,6 +122,10 @@ class MainActivity : Activity() {
         // Android 12+ asks before an app may use paired Bluetooth devices
         if (Build.VERSION.SDK_INT >= 31 && checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) != android.content.pm.PackageManager.PERMISSION_GRANTED)
             requestPermissions(arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT), 7)
+        // something on screen at once: the search (USB, Wi-Fi, then Bluetooth) can take a while, and the offline
+        // screen is also where a new tablet pairs, so it must never wait behind a slow Bluetooth attempt
+        offline = true
+        web.loadUrl(OFFLINE)
         if (!handlePairLink(intent)) connect()
     }
 

@@ -72,7 +72,11 @@ class BtBridge(private val context: Context) {
         for (device in candidates()) {
             try {
                 val s = device.createRfcommSocketToServiceRecord(SERVICE)
-                s.connect()
+                // a PC that is off or out of range can keep connect() blocked for a long time: give up after 8 s
+                val watchdog = thread(isDaemon = true, name = "bt-timeout") {
+                    try { Thread.sleep(8000); if (!s.isConnected) s.close() } catch (_: InterruptedException) { } catch (_: Exception) { }
+                }
+                try { s.connect() } finally { watchdog.interrupt() }
                 socket = s
                 out = DataOutputStream(s.outputStream)
                 prefs.edit().putString("btAddress", device.address).apply()

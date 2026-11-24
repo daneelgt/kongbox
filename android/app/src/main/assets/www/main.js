@@ -335,14 +335,78 @@
     if (el.classList.contains('cap')) u = Math.min(u, Math.max(11, Math.min(innerWidth, innerHeight) / 24));
     return u;
   }
-  var ro = window.ResizeObserver ? new ResizeObserver(function (entries) {
-    entries.forEach(function (e) {
-      e.target.style.setProperty('--u', unitFor(e.target, e.contentRect.width, e.contentRect.height).toFixed(2) + 'px');
+  // --u plus the container units (--cqw/--cqh/--cqmin = 1% of the widget) every size-aware rule is written in;
+  // feeding them from JS keeps one code path for new and old WebViews (cq units only exist since Chrome 105)
+  function sizeVars(el, w, h) {
+    var st = el.style;
+    st.setProperty('--u', unitFor(el, w, h).toFixed(2) + 'px');
+    st.setProperty('--cqw', (w / 100).toFixed(2) + 'px');
+    st.setProperty('--cqh', (h / 100).toFixed(2) + 'px');
+    st.setProperty('--cqmin', (Math.min(w, h) / 100).toFixed(2) + 'px');
+    if (cqRules) cqApply(el, w, h);
+  }
+
+  // @container polyfill for WebViews without container queries (tablets and phones stuck on old Chrome): the
+  // rules are read from widgets.css once and re-emitted as attribute selectors toggled per widget on resize.
+  var cqRules = null;
+  function cqInit() {
+    if ((' ' + document.documentElement.className + ' ').indexOf(' no-cq ') < 0) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', 'widgets.css', true);
+    x.onload = function () {
+      var css = String(x.responseText || '').replace(/\/\*[\s\S]*?\*\//g, ''), out = [], rules = [], at = 0;
+      while ((at = css.indexOf('@container', at)) >= 0) {
+        var open = css.indexOf('{', at), depth = 1, i = open + 1;
+        while (i < css.length && depth) { if (css[i] === '{') depth++; else if (css[i] === '}') depth--; i++; }
+        var conds = [], re = /\(\s*(min|max)-(width|height|aspect-ratio)\s*:\s*([\d.]+)(?:px)?\s*(?:\/\s*([\d.]+))?\s*\)/g, m;
+        var prelude = css.slice(at + 10, open);
+        while ((m = re.exec(prelude))) conds.push({ min: m[1] === 'min', f: m[2], v: m[4] ? +m[3] / +m[4] : +m[3] });
+        var tok = 'q' + rules.length;
+        rules.push({ tok: tok, conds: conds });
+        css.slice(open + 1, i - 1).split('}').forEach(function (r) {
+          var b = r.indexOf('{'); if (b < 0) return;
+          var sels = r.slice(0, b).split(',').map(function (sel) {
+            sel = sel.trim(); if (!sel) return '';
+            var a = '[data-cq~="' + tok + '"]', sp = sel.search(/[\s>+~]/);
+            // the widget itself may be the first compound (".w-media .md-p") or an ancestor of it (".lk-s")
+            return a + ' ' + sel + ', ' + (sp < 0 ? sel + a : sel.slice(0, sp) + a + sel.slice(sp));
+          }).filter(Boolean);
+          if (sels.length) out.push(sels.join(', ') + ' {' + r.slice(b + 1) + '}');
+        });
+        at = i;
+      }
+      if (!rules.length) return;
+      cqRules = rules;
+      var style = document.createElement('style');
+      style.textContent = out.join('\n');
+      document.head.appendChild(style);
+      Array.prototype.forEach.call(document.querySelectorAll('.w'), function (el) {
+        var cs = getComputedStyle(el);
+        cqApply(el, el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
+      });
+    };
+    x.send();
+  }
+  function cqApply(el, w, h) {
+    var on = [];
+    cqRules.forEach(function (r) {
+      for (var i = 0; i < r.conds.length; i++) {
+        var c = r.conds[i], v = c.f === 'width' ? w : c.f === 'height' ? h : w / Math.max(h, 1);
+        if (c.min ? v < c.v : v > c.v) return;
+      }
+      on.push(r.tok);
     });
+    var next = on.join(' ');
+    if (el.getAttribute('data-cq') !== next) el.setAttribute('data-cq', next);
+  }
+  cqInit();
+
+  var ro = window.ResizeObserver ? new ResizeObserver(function (entries) {
+    entries.forEach(function (e) { sizeVars(e.target, e.contentRect.width, e.contentRect.height); });
   }) : null;
   function sizeObserver(el) {
     if (ro) ro.observe(el);
-    else el.style.setProperty('--u', unitFor(el, el.clientWidth, el.clientHeight) + 'px');
+    else sizeVars(el, el.clientWidth, el.clientHeight);
   }
   KB.observe = sizeObserver;
 
